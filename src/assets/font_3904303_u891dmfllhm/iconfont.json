@@ -1,0 +1,16 @@
+{
+  "id": "3904303",
+  "name": "second",
+  "font_family": "element-icons",
+  "css_prefix_text": "el-icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "26164176",
+      "name": "二维码",
+      "font_class": "KJ_016",
+      "unicode": "e667",
+      "unicode_decimal": 58983
+    }
+  ]
+}

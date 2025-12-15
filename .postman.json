@@ -1,0 +1,42 @@
+{
+  "workspaceId": "6d82ebed-37c0-4cdc-8b05-55223b5c50d4",
+  "workspaceName": "My Workspace",
+  "collectionId": "30578630-6e53b595-f849-4366-8eea-d2417e08e2c0",
+  "collectionName": "停车管理系统 API",
+  "environmentId": "30578630-482c11ee-18ce-409a-a378-4ba9e444c711",
+  "environmentName": "停车系统-生产环境",
+  "baseUrl": "https://www.xuerparking.cn:8543",
+  "createdAt": "2025-12-12",
+  "apis": [
+    {
+      "name": "用户登录",
+      "method": "POST",
+      "path": "/api/auth/login"
+    },
+    {
+      "name": "用户登出",
+      "method": "POST",
+      "path": "/api/auth/logout"
+    },
+    {
+      "name": "获取用户列表",
+      "method": "GET",
+      "path": "/api/users"
+    },
+    {
+      "name": "获取违规记录列表",
+      "method": "GET",
+      "path": "/parking/violations"
+    },
+    {
+      "name": "获取业主列表",
+      "method": "GET",
+      "path": "/api/owners"
+    },
+    {
+      "name": "获取仪表板数据",
+      "method": "GET",
+      "path": "/api/dashboard/stats"
+    }
+  ]
+}
