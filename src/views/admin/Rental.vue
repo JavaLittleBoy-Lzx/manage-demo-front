@@ -393,7 +393,7 @@ const handleEdit = (row) => {
 };
 const handleExport = () => {
   window.location.href =
-    "http://www.xuerparking.cn:9999/rental/exportAllocation?deviceName=" +
+    "http://localhost:9999/rental/exportAllocation?deviceName=" +
     query.deviceName +
     "&deviceCode=" +
     query.deviceCode +

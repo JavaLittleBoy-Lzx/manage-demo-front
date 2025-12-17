@@ -218,7 +218,7 @@ const handleEdit = (row) => {
 
 };
 const handleExport = () => {
-  window.location.href = "http://www.xuerparking.cn:9999/maintenance/exportMaintenance";
+  window.location.href = "http://localhost:9999/maintenance/exportMaintenance";
 };
 
 const viewShow = ref(false)

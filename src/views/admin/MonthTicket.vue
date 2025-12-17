@@ -634,9 +634,23 @@ const handleSyc = () => {
                 })
                 .then((res) => {
                     loading.close()
-                    console.log(res)
-                    ElMessage.success("成功更新" + res.data.data + "数据!");
-                    getData()
+                    console.log('📄 响应数据: ', res)
+                    
+                    // 检查响应结构：res.data.data 是实际的同步结果对象
+                    const syncResult = res.data.data;
+                    
+                    if (syncResult && syncResult.success) {
+                        ElMessage.success(`同步成功！新增 ${syncResult.addedCount || 0} 条，修改 ${syncResult.modifiedCount || 0} 条，删除 ${syncResult.deletedCount || 0} 条`);
+                        getData()
+                    } else {
+                        const errorMsg = syncResult?.message || '同步失败，请稍后重试';
+                        ElMessage.error(errorMsg);
+                    }
+                })
+                .catch((error) => {
+                    loading.close()
+                    console.error('同步失败:', error)
+                    ElMessage.error('同步失败：' + (error.message || '网络错误'))
                 });
         }, loadingTime);
     }).catch(() => {
@@ -655,9 +669,23 @@ const handleSyc = () => {
                 })
                 .then((res) => {
                     loading.close()
-                    console.log(res.data.data)
-                    ElMessage.success("成功更新" + res.data.data + "数据!");
-                    getData()
+                    console.log('📄 响应数据: ', res)
+                    
+                    // 检查响应结构：res.data.data 是实际的同步结果对象
+                    const syncResult = res.data.data;
+                    
+                    if (syncResult && syncResult.success) {
+                        ElMessage.success(`同步成功！新增 ${syncResult.addedCount || 0} 条，修改 ${syncResult.modifiedCount || 0} 条，删除 ${syncResult.deletedCount || 0} 条`);
+                        getData()
+                    } else {
+                        const errorMsg = syncResult?.message || '同步失败，请稍后重试';
+                        ElMessage.error(errorMsg);
+                    }
+                })
+                .catch((error) => {
+                    loading.close()
+                    console.error('同步失败:', error)
+                    ElMessage.error('同步失败：' + (error.message || '网络错误'))
                 });
         }, loadingTime);
     })

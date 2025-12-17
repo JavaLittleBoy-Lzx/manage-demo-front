@@ -280,7 +280,7 @@ const handleEdit = (row) => {
 };
 const handleExport = () => {
   window.location.href =
-    "http://www.xuerparking.cn:9999/scrap/exportScrap?deviceName=" +
+    "http://localhost:9999/scrap/exportScrap?deviceName=" +
     query.deviceName +
     "&deviceCode=" +
     query.deviceCode +

@@ -110,6 +110,15 @@
                                     </el-button>
                                 </div>
                                 <div class="action-buttons">
+                                    <!-- 🆕 违规统计按钮 - 只有东北林业大学车场才显示 -->
+                                    <el-button 
+                                        v-if="showStatisticsButton"
+                                        type="info" 
+                                        icon="TrendCharts" 
+                                        @click="showStatisticsDialog = true"
+                                        size="small">
+                                        违规统计
+                                    </el-button>
                                     <!-- 🆕 批量处理按钮 -->
                                     <el-button type="primary" icon="Check" @click="handleBatchProcess" size="small"
                                         :disabled="multipleSelection.length === 0">
@@ -118,20 +127,20 @@
                                     <el-button type="success" icon="Download" @click="handleExport" size="small">
                                         导出数据
                                     </el-button>
-                                    <el-button v-if="showEuropeNewCityConfig" type="warning" icon="Setting" @click="handleMonthlyTicketConfig"
-                                        size="small">
+                                    <el-button v-if="showEuropeNewCityConfig" type="warning" icon="Setting"
+                                        @click="handleMonthlyTicketConfig" size="small">
                                         月票车配置（欧洲新城）
                                     </el-button>
-                                    <el-button v-if="showNebuConfig" type="danger" icon="Setting" @click="handleNebuConfigDialog"
-                                        size="small">
+                                    <el-button v-if="showNebuConfig" type="danger" icon="Setting"
+                                        @click="handleNebuConfigDialog" size="small">
                                         违规阈值（东北林业大学）
                                     </el-button>
-                                    <el-button v-if="showCollegeNewCityConfig" type="success" icon="Setting" @click="handleCollegeNewCityConfigDialog"
-                                        size="small">
+                                    <el-button v-if="showCollegeNewCityConfig" type="success" icon="Setting"
+                                        @click="handleCollegeNewCityConfigDialog" size="small">
                                         拉黑规则（学院新城）
                                     </el-button>
-                                    <el-button v-if="showWanXiangConfig" type="primary" icon="Setting" @click="handleWanXiangConfigDialog"
-                                        size="small">
+                                    <el-button v-if="showWanXiangConfig" type="primary" icon="Setting"
+                                        @click="handleWanXiangConfigDialog" size="small">
                                         拉黑规则（万象上东）
                                     </el-button>
                                 </div>
@@ -547,7 +556,7 @@
         </el-dialog>
 
         <!-- 🆕 单条处理弹窗 -->
-        <el-dialog title="处理违规记录" v-model="processShow" width="600px" class="process-dialog">
+        <el-dialog title="处理违规记录" v-model="processShow" width="850px" class="process-dialog">
             <div v-if="processForm.processAll && processForm.violationCount > 0" class="process-info-alert">
                 <el-alert :title="`将处理该车辆的所有 ${processForm.violationCount} 条未处理违规记录，并加入黑名单`" type="warning"
                     :closable="false" show-icon style="margin-bottom: 20px;">
@@ -567,16 +576,46 @@
                     <el-input v-model="processCountText" disabled></el-input>
                 </el-form-item>
 
-                <el-form-item label="处理备注">
-                    <el-input type="textarea" v-model="processForm.processRemark" placeholder="请输入处理说明（可选）..." :rows="3"
-                        maxlength="200" show-word-limit>
+                <!-- 🆕 处理方式选择 -->
+                <el-form-item label="处理方式" required>
+                    <el-radio-group v-model="processForm.processType">
+                        <el-radio label="blacklist">
+                            <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                <span>拉黑处理</span>
+                                <el-tooltip content="违规属实，加入黑名单" placement="top">
+                                    <el-icon>
+                                        <WarningFilled />
+                                    </el-icon>
+                                </el-tooltip>
+                            </span>
+                        </el-radio>
+                        <el-radio label="mistake">
+                            <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                <span>误操作处理</span>
+                                <el-tooltip content="误操作或特殊情况，仅标记已处理，不加入黑名单" placement="top">
+                                    <el-icon>
+                                        <InfoFilled />
+                                    </el-icon>
+                                </el-tooltip>
+                            </span>
+                        </el-radio>
+                    </el-radio-group>
+                    <div style="color: #909399; font-size: 12px; margin-top: 8px;">
+                        💡 提示：误操作处理不会加入黑名单，适用于录入错误、特殊情况等场景
+                    </div>
+                </el-form-item>
+
+                <el-form-item label="处理备注" :required="processForm.processType === 'mistake'">
+                    <el-input type="textarea" v-model="processForm.processRemark"
+                        :placeholder="processForm.processType === 'mistake' ? '请说明误操作原因（必填）...' : '请输入处理说明（可选）...'"
+                        :rows="3" maxlength="200" show-word-limit>
                     </el-input>
                 </el-form-item>
 
-                <!-- 🆕 黑名单设置（处理违规记录必须拉黑） -->
-                <el-divider content-position="left">黑名单设置</el-divider>
+                <!-- 🆕 黑名单设置（仅拉黑处理时显示） -->
+                <el-divider v-if="processForm.processType === 'blacklist'" content-position="left">黑名单设置</el-divider>
 
-                <el-form-item label="黑名单类型" required>
+                <el-form-item v-if="processForm.processType === 'blacklist'" label="黑名单类型" required>
                     <el-select v-model="processForm.blacklistType"
                         :placeholder="blacklistTypeLoading ? '加载中...' : '请选择黑名单类型'" :loading="blacklistTypeLoading"
                         style="width: 100%">
@@ -593,20 +632,21 @@
                     </div>
                 </el-form-item>
 
-                <el-form-item label="拉黑时长" required>
+                <el-form-item v-if="processForm.processType === 'blacklist'" label="拉黑时长" required>
                     <el-radio-group v-model="processForm.isPermanent">
                         <el-radio :label="true">永久拉黑</el-radio>
                         <el-radio :label="false">临时拉黑</el-radio>
                     </el-radio-group>
                 </el-form-item>
 
-                <el-form-item v-if="!processForm.isPermanent" label="拉黑时间段" required>
+                <el-form-item v-if="processForm.processType === 'blacklist' && !processForm.isPermanent" label="拉黑时间段"
+                    required>
                     <el-date-picker v-model="processForm.blacklistDateRange" type="daterange" range-separator="至"
                         start-placeholder="开始日期" end-placeholder="结束日期" style="width: 100%" value-format="YYYY-MM-DD">
                     </el-date-picker>
                 </el-form-item>
 
-                <el-form-item label="拉黑原因" required>
+                <el-form-item v-if="processForm.processType === 'blacklist'" label="拉黑原因" required>
                     <el-input type="textarea" v-model="processForm.blacklistReason" placeholder="请输入拉黑原因（必填）..."
                         :rows="3" maxlength="200" show-word-limit>
                     </el-input>
@@ -624,7 +664,7 @@
                 <div class="dialog-footer">
                     <el-button @click="processShow = false">取消</el-button>
                     <el-button type="primary" @click="confirmProcess" :loading="processing">
-                        确认处理并加入黑名单
+                        {{ processForm.processType === 'mistake' ? '确认处理（不拉黑）' : '确认处理并加入黑名单' }}
                     </el-button>
                 </div>
             </template>
@@ -756,11 +796,13 @@
                     <el-form-item label="凌晨时间段" prop="nightTimeRange">
                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                             <el-select v-model="collegeNewCityConfigForm.nightStartHour" style="width: 120px;">
-                                <el-option v-for="h in 24" :key="`start-` + h" :label="formatHour(h - 1)" :value="h - 1" />
+                                <el-option v-for="h in 24" :key="`start-` + h" :label="formatHour(h - 1)"
+                                    :value="h - 1" />
                             </el-select>
                             <span>至</span>
                             <el-select v-model="collegeNewCityConfigForm.nightEndHour" style="width: 120px;">
-                                <el-option v-for="h in 24" :key="`end-` + h" :label="formatHour(h - 1)" :value="h - 1" />
+                                <el-option v-for="h in 24" :key="`end-` + h" :label="formatHour(h - 1)"
+                                    :value="h - 1" />
                             </el-select>
                             <span>进入的车辆按总时长计算</span>
                         </div>
@@ -834,19 +876,18 @@
         </el-dialog>
 
         <!-- 🆕 万象上东拉黑规则配置弹窗 -->
-        <el-dialog title="万象上东拉黑规则配置" v-model="wanXiangConfigShow" width="1100px"
-            class="wan-xiang-config-dialog">
+        <el-dialog title="万象上东拉黑规则配置" v-model="wanXiangConfigShow" width="1100px" class="wan-xiang-config-dialog">
             <div class="wan-xiang-config-content">
                 <div class="config-info">
                     <p class="config-desc">配置万象上东过夜拉黑规则，仅针对 <code>万象上东</code> 车场生效</p>
-                    <el-alert title="特别说明：业主名下所有车牌批量拉黑" type="warning" :closable="false" 
-                        style="margin-top: 10px;" show-icon>
+                    <el-alert title="特别说明：业主名下所有车牌批量拉黑" type="warning" :closable="false" style="margin-top: 10px;"
+                        show-icon>
                         <p style="font-size: 13px;">当检测到一辆车违规时，将拉黑该业主名下的所有车牌号</p>
                     </el-alert>
                 </div>
 
-                <el-form :model="wanXiangConfigForm" :rules="wanXiangConfigRules"
-                    ref="wanXiangConfigFormRef" label-width="160px">
+                <el-form :model="wanXiangConfigForm" :rules="wanXiangConfigRules" ref="wanXiangConfigFormRef"
+                    label-width="160px">
 
                     <!-- 夜间时间配置 -->
                     <el-divider content-position="left">
@@ -855,22 +896,12 @@
 
                     <el-form-item label="夜间时间段" prop="nightTimeRange">
                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <el-time-select
-                                v-model="wanXiangConfigForm.nightStartTime"
-                                placeholder="开始时间"
-                                start="00:00"
-                                step="00:30"
-                                end="23:30"
-                                style="width: 140px;">
+                            <el-time-select v-model="wanXiangConfigForm.nightStartTime" placeholder="开始时间" start="00:00"
+                                step="00:30" end="23:30" style="width: 140px;">
                             </el-time-select>
                             <span>至</span>
-                            <el-time-select
-                                v-model="wanXiangConfigForm.nightEndTime"
-                                placeholder="结束时间"
-                                start="00:00"
-                                step="00:30"
-                                end="23:30"
-                                style="width: 140px;">
+                            <el-time-select v-model="wanXiangConfigForm.nightEndTime" placeholder="结束时间" start="00:00"
+                                step="00:30" end="23:30" style="width: 140px;">
                             </el-time-select>
                         </div>
                         <span class="form-tip">在此时间段内进场的车辆将被监控（推荐：23:00 至 06:00）</span>
@@ -879,8 +910,8 @@
                     <el-form-item label="停车时长阈值" prop="nightTimeHours">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <span>超过</span>
-                            <el-input-number v-model="wanXiangConfigForm.nightTimeHours" :min="1" :max="24"
-                                :step="1" controls-position="right" style="width: 120px;">
+                            <el-input-number v-model="wanXiangConfigForm.nightTimeHours" :min="1" :max="24" :step="1"
+                                controls-position="right" style="width: 120px;">
                             </el-input-number>
                             <span>小时自动拉黑</span>
                         </div>
@@ -898,7 +929,9 @@
                                 <span style="display: inline-flex; align-items: center; gap: 4px;">
                                     <span>免检模式</span>
                                     <el-tooltip content="选择的VIP类型不进行检查" placement="top">
-                                        <el-icon><QuestionFilled /></el-icon>
+                                        <el-icon>
+                                            <QuestionFilled />
+                                        </el-icon>
                                     </el-tooltip>
                                 </span>
                             </el-radio>
@@ -906,7 +939,9 @@
                                 <span style="display: inline-flex; align-items: center; gap: 4px;">
                                     <span>待检查模式</span>
                                     <el-tooltip content="只检查选择的VIP类型" placement="top">
-                                        <el-icon><QuestionFilled /></el-icon>
+                                        <el-icon>
+                                            <QuestionFilled />
+                                        </el-icon>
                                     </el-tooltip>
                                 </span>
                             </el-radio>
@@ -923,8 +958,8 @@
                                 :value="ticketType" />
                         </el-select>
                         <div class="form-tip" style="margin-top: 8px;">
-                            {{ wanXiangConfigForm.vipCheckMode === 'include' ? 
-                                '✅ 选中的月票类型将被检查，符合条件将拉黑业主名下所有车辆' : 
+                            {{ wanXiangConfigForm.vipCheckMode === 'include' ?
+                                '✅ 选中的月票类型将被检查，符合条件将拉黑业主名下所有车辆' :
                                 '🛡️ 选中的月票类型将免检，不会被拉黑' }}
                         </div>
                     </el-form-item>
@@ -959,8 +994,8 @@
 
                     <el-form-item v-if="!wanXiangConfigForm.isPermanent" label="拉黑有效期" prop="blacklistValidDays">
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <el-input-number v-model="wanXiangConfigForm.blacklistDays" :min="1" :max="365"
-                                :step="1" controls-position="right" style="width: 150px;">
+                            <el-input-number v-model="wanXiangConfigForm.blacklistDays" :min="1" :max="365" :step="1"
+                                controls-position="right" style="width: 150px;">
                             </el-input-number>
                             <span style="color: #606266; font-size: 14px;">天</span>
                         </div>
@@ -974,22 +1009,12 @@
 
                     <el-form-item label="推送时间段" prop="notificationTimeRange">
                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <el-time-select
-                                v-model="wanXiangConfigForm.notificationStartTime"
-                                placeholder="开始时间"
-                                start="00:00"
-                                step="00:30"
-                                end="23:30"
-                                style="width: 140px;">
+                            <el-time-select v-model="wanXiangConfigForm.notificationStartTime" placeholder="开始时间"
+                                start="00:00" step="00:30" end="23:30" style="width: 140px;">
                             </el-time-select>
                             <span>至</span>
-                            <el-time-select
-                                v-model="wanXiangConfigForm.notificationEndTime"
-                                placeholder="结束时间"
-                                start="00:00"
-                                step="00:30"
-                                end="23:30"
-                                style="width: 140px;">
+                            <el-time-select v-model="wanXiangConfigForm.notificationEndTime" placeholder="结束时间"
+                                start="00:00" step="00:30" end="23:30" style="width: 140px;">
                             </el-time-select>
                         </div>
                         <span class="form-tip">设置每天发送超时推送的时间段（建议：23:00 至 06:00）。支持跨日设置，如23:00-06:00表示晚上11点到早上6点</span>
@@ -1010,7 +1035,9 @@
                                             <span class="rule-icon">🌙</span>
                                             <div class="rule-content">
                                                 <strong>夜间进场监控</strong>
-                                                <p>{{ wanXiangConfigForm.nightStartTime }}-{{ wanXiangConfigForm.nightEndTime }}进场的车辆将被监控</p>
+                                                <p>{{ wanXiangConfigForm.nightStartTime }}-{{
+                                                    wanXiangConfigForm.nightEndTime
+                                                    }}进场的车辆将被监控</p>
                                             </div>
                                         </div>
                                         <div class="rule-item">
@@ -1025,10 +1052,14 @@
                                             <div class="rule-content">
                                                 <strong>VIP类型检查</strong>
                                                 <p v-if="wanXiangConfigForm.vipCheckMode === 'include'">
-                                                    只检查{{ wanXiangConfigForm.vipTicketTypes && wanXiangConfigForm.vipTicketTypes.length > 0 ? wanXiangConfigForm.vipTicketTypes.join('、') : '(未选择)' }}类型
+                                                    只检查{{ wanXiangConfigForm.vipTicketTypes &&
+                                                        wanXiangConfigForm.vipTicketTypes.length > 0 ?
+                                                    wanXiangConfigForm.vipTicketTypes.join('、') : '(未选择)' }}类型
                                                 </p>
                                                 <p v-else>
-                                                    {{ wanXiangConfigForm.vipTicketTypes && wanXiangConfigForm.vipTicketTypes.length > 0 ? wanXiangConfigForm.vipTicketTypes.join('、') : '(未选择)' }}类型免检
+                                                    {{ wanXiangConfigForm.vipTicketTypes &&
+                                                        wanXiangConfigForm.vipTicketTypes.length > 0 ?
+                                                    wanXiangConfigForm.vipTicketTypes.join('、') : '(未选择)' }}类型免检
                                                 </p>
                                             </div>
                                         </div>
@@ -1036,7 +1067,9 @@
                                             <span class="rule-icon">🛡️</span>
                                             <div class="rule-content">
                                                 <strong>黑名单类型</strong>
-                                                <p>{{ wanXiangConfigForm.blacklistName ? wanXiangConfigForm.blacklistName.split('|').slice(-1)[0] : '(未选择)' }}</p>
+                                                <p>{{ wanXiangConfigForm.blacklistName ?
+                                                    wanXiangConfigForm.blacklistName.split('|').slice(-1)[0] : '(未选择)'
+                                                    }}</p>
                                             </div>
                                         </div>
                                         <div class="rule-item highlight">
@@ -1078,8 +1111,7 @@
             <template #footer>
                 <div class="dialog-footer">
                     <el-button @click="wanXiangConfigShow = false">取消</el-button>
-                    <el-button type="primary" @click="handleSaveWanXiangConfig"
-                        :loading="wanXiangConfigSaving">
+                    <el-button type="primary" @click="handleSaveWanXiangConfig" :loading="wanXiangConfigSaving">
                         保存配置
                     </el-button>
                 </div>
@@ -1098,19 +1130,72 @@
                         </p>
                     </template>
                 </el-alert>
+
+                <!-- 🆕 车牌号折叠展示 -->
+                <div class="plate-numbers-section" style="margin-top: 15px;">
+                    <el-collapse v-model="batchPlateCollapse">
+                        <el-collapse-item name="plates">
+                            <template #title>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <el-icon>
+                                        <CarFilled />
+                                    </el-icon>
+                                    <span style="font-weight: 500;">涉及车辆 ({{ batchPlateNumbers.length }} 辆)</span>
+                                </div>
+                            </template>
+                            <div class="plate-numbers-list">
+                                <el-tag v-for="(plate, index) in batchPlateNumbers" :key="index" type="info"
+                                    size="small" style="margin: 4px;">
+                                    {{ plate }}
+                                </el-tag>
+                            </div>
+                        </el-collapse-item>
+                    </el-collapse>
+                </div>
             </div>
 
             <el-form label-width="110px" style="margin-top: 20px;">
-                <el-form-item label="批量备注">
-                    <el-input type="textarea" v-model="batchProcessRemark" placeholder="请输入批量处理说明（可选）..." :rows="3"
-                        maxlength="200" show-word-limit>
+                <!-- 🆕 处理方式选择 -->
+                <el-form-item label="处理方式" required>
+                    <el-radio-group v-model="batchBlacklistForm.processType">
+                        <el-radio label="blacklist">
+                            <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                <span>拉黑处理</span>
+                                <el-tooltip content="违规属实，加入黑名单" placement="top">
+                                    <el-icon>
+                                        <WarningFilled />
+                                    </el-icon>
+                                </el-tooltip>
+                            </span>
+                        </el-radio>
+                        <el-radio label="mistake">
+                            <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                <span>误操作处理</span>
+                                <el-tooltip content="误操作或特殊情况，仅标记已处理，不加入黑名单" placement="top">
+                                    <el-icon>
+                                        <InfoFilled />
+                                    </el-icon>
+                                </el-tooltip>
+                            </span>
+                        </el-radio>
+                    </el-radio-group>
+                    <div style="color: #909399; font-size: 12px; margin-top: 8px;">
+                        💡 提示：误操作处理不会加入黑名单，适用于录入错误、特殊情况等场景
+                    </div>
+                </el-form-item>
+
+                <el-form-item label="批量备注" :required="batchBlacklistForm.processType === 'mistake'">
+                    <el-input type="textarea" v-model="batchProcessRemark"
+                        :placeholder="batchBlacklistForm.processType === 'mistake' ? '请说明误操作原因（必填）...' : '请输入批量处理说明（可选）...'"
+                        :rows="3" maxlength="200" show-word-limit>
                     </el-input>
                 </el-form-item>
 
-                <!-- 🆕 黑名单设置（批量处理必须拉黑） -->
-                <el-divider content-position="left">黑名单设置</el-divider>
+                <!-- 🆕 黑名单设置（仅拉黑处理时显示） -->
+                <el-divider v-if="batchBlacklistForm.processType === 'blacklist'"
+                    content-position="left">黑名单设置</el-divider>
 
-                <el-form-item label="黑名单类型" required>
+                <el-form-item v-if="batchBlacklistForm.processType === 'blacklist'" label="黑名单类型" required>
                     <el-select v-model="batchBlacklistForm.blacklistType"
                         :placeholder="blacklistTypeLoading ? '加载中...' : '请选择黑名单类型'" :loading="blacklistTypeLoading"
                         style="width: 100%">
@@ -1127,20 +1212,21 @@
                     </div>
                 </el-form-item>
 
-                <el-form-item label="拉黑时长" required>
+                <el-form-item v-if="batchBlacklistForm.processType === 'blacklist'" label="拉黑时长" required>
                     <el-radio-group v-model="batchBlacklistForm.isPermanent">
                         <el-radio :label="true">永久拉黑</el-radio>
                         <el-radio :label="false">临时拉黑</el-radio>
                     </el-radio-group>
                 </el-form-item>
 
-                <el-form-item v-if="!batchBlacklistForm.isPermanent" label="拉黑时间段" required>
+                <el-form-item v-if="batchBlacklistForm.processType === 'blacklist' && !batchBlacklistForm.isPermanent"
+                    label="拉黑时间段" required>
                     <el-date-picker v-model="batchBlacklistForm.blacklistDateRange" type="daterange" range-separator="至"
                         start-placeholder="开始日期" end-placeholder="结束日期" style="width: 100%" value-format="YYYY-MM-DD">
                     </el-date-picker>
                 </el-form-item>
 
-                <el-form-item label="拉黑原因" required>
+                <el-form-item v-if="batchBlacklistForm.processType === 'blacklist'" label="拉黑原因" required>
                     <el-input type="textarea" v-model="batchBlacklistForm.blacklistReason" placeholder="请输入拉黑原因（必填）..."
                         :rows="3" maxlength="200" show-word-limit>
                     </el-input>
@@ -1158,7 +1244,115 @@
                 <div class="dialog-footer">
                     <el-button @click="showBatchProcessDialog = false">取消</el-button>
                     <el-button type="primary" @click="confirmBatchProcess" :loading="batchProcessing">
-                        确认批量处理并加入黑名单
+                        {{ batchBlacklistForm.processType === 'mistake' ? '确认批量处理（不拉黑）' : '确认批量处理并加入黑名单' }}
+                    </el-button>
+                </div>
+            </template>
+        </el-dialog>
+
+        <!-- 🆕 违规统计弹窗 -->
+        <el-dialog title="违规数据统计" v-model="showStatisticsDialog" width="1200px" class="statistics-dialog">
+            <!-- 时间选择器 -->
+            <div class="time-selector">
+                <el-date-picker
+                    v-model="statisticsDateRange"
+                    type="daterange"
+                    range-separator="至"
+                    start-placeholder="开始日期"
+                    end-placeholder="结束日期"
+                    @change="handleDateRangeChange"
+                    size="default"
+                    style="margin-right: 12px;"
+                />
+                <el-button type="primary" @click="loadStatisticsData" :loading="statisticsLoading">
+                    查询统计
+                </el-button>
+            </div>
+            
+            <div class="statistics-dialog-content" v-loading="statisticsLoading">
+                <!-- 统计卡片 -->
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <div class="stat-icon warning">
+                            <el-icon><WarningFilled /></el-icon>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value">{{ violationStats.totalViolations || 0 }}</div>
+                            <div class="stat-label">总违规数</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon pending">
+                            <el-icon><Clock /></el-icon>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value">{{ violationStats.pendingViolations || 0 }}</div>
+                            <div class="stat-label">未处理</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon processed">
+                            <el-icon><Check /></el-icon>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value">{{ violationStats.processedViolations || 0 }}</div>
+                            <div class="stat-label">已处理</div>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <!-- 违规趋势图表 -->
+                <div class="single-chart">
+                    <div class="chart-box">
+                        <div class="chart-header">
+                            <div class="header-content">
+                                <h3 class="chart-title">
+                                    <el-icon><TrendCharts /></el-icon>
+                                    违规数量趋势分析
+                                </h3>
+                                <div class="chart-subtitle" v-if="statisticsDateRange && statisticsDateRange.length === 2">
+                                    {{ formatDate(statisticsDateRange[0]) }} 至 {{ formatDate(statisticsDateRange[1]) }}
+                                    <span class="total-count">· 共 {{ violationStats.totalViolations }} 条违规记录</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Top值提醒区域 -->
+                        <div class="top-alerts" v-if="topAlerts && topAlerts.length > 0">
+                            <div 
+                                v-for="alert in topAlerts" 
+                                :key="alert.type"
+                                class="alert-item"
+                                :class="alert.type"
+                            >
+                                <el-icon class="alert-icon">
+                                    <component :is="alert.icon" />
+                                </el-icon>
+                                <span 
+                                    class="alert-text" 
+                                    v-if="!alert.isHtml"
+                                >{{ alert.message }}</span>
+                                <span 
+                                    class="alert-text" 
+                                    v-else
+                                    v-html="alert.message"
+                                ></span>
+                            </div>
+                        </div>
+                        
+                        <div ref="violationTrendChartRef" class="chart-content"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <template #footer>
+                <div class="dialog-footer">
+                    <el-button @click="showStatisticsDialog = false">关闭</el-button>
+                    <el-button type="primary" @click="loadStatisticsData" :loading="statisticsLoading">
+                        刷新数据
                     </el-button>
                 </div>
             </template>
@@ -1168,12 +1362,13 @@
 
 <script setup>
 import { useRoute, useRouter } from "vue-router";
-import { reactive, ref, watch, computed, onMounted } from "vue";
+import { reactive, ref, watch, computed, onMounted, watchEffect } from "vue";
 import request from "@/utils/request";
 import { ElMessage, ElMessageBox, ElLoading } from "element-plus";
 import { useStore } from "vuex";
 import { violationApi } from "@/api/violation";
-import { WarningFilled, Search, ArrowDown, View, Download, RefreshRight, Location, Clock, Phone, Picture, QuestionFilled } from '@element-plus/icons-vue';
+import { WarningFilled, Search, ArrowDown, View, Download, RefreshRight, Location, Clock, Phone, Picture, QuestionFilled, CarFilled, InfoFilled, TrendCharts, Check, UserFilled, PieChart, DataAnalysis } from '@element-plus/icons-vue';
+import * as echarts from 'echarts';
 import { activityApi } from "@/api/activity";
 import { getYardList } from "@/api/parkStaff";
 // 导入违规提醒API
@@ -1188,13 +1383,38 @@ const store = useStore();
 // 搜索面板展开状态
 const searchPanelExpanded = ref(true);
 
-// 🔐 车场权限相关
+// 🔒 车场权限相关
 const isAdmin = ref(checkIsAdmin());
 const managedParks = ref(getManagedParks() || []);
 
-console.log('🔐 违规记录查询 - 车场权限信息:', {
+console.log('🔒 违规记录查询 - 车场权限信息:', {
     isAdmin: isAdmin.value,
     managedParks: managedParks.value
+});
+
+// 🔒 违规统计按钮显示条件：只有管理东北林业大学车场的用户才显示
+const showStatisticsButton = computed(() => {
+    console.log('🔍 [违规统计按钮] 开始检查显示条件:', {
+        isAdmin: isAdmin.value,
+        managedParks: managedParks.value,
+        parksCount: managedParks.value.length
+    });
+    
+    // 管理员显示
+    if (isAdmin.value) {
+        console.log('✅ [违规统计按钮] 管理员权限，显示按钮');
+        return true;
+    }
+    
+    // 检查用户管理的车场中是否包含东北林业大学相关车场
+    const hasNEFUPark = managedParks.value.some(parkName => {
+        const result = parkName.includes('东北林业大学');
+        console.log(`  - 检查车场: "${parkName}", 包含东北林业大学: ${result}`);
+        return result;
+    });
+    
+    console.log(hasNEFUPark ? '✅ [违规统计按钮] 找到东北林业大学车场，显示按钮' : '❌ [违规统计按钮] 未找到东北林业大学车场，隐藏按钮');
+    return hasNEFUPark;
 });
 
 // 🆕 车场列表选项（原始数据）
@@ -1210,12 +1430,12 @@ const filteredCommunityOptions = computed(() => {
 const showNebuConfig = computed(() => {
     // 获取当前用户角色
     const roleName = localStorage.getItem('ms_role_name') || '';
-    
+
     // 巡检员不显示此按钮
     if (roleName.includes('巡检员')) {
         return false;
     }
-    
+
     if (isAdmin.value) return true;
     return managedParks.value.includes('东北林业大学');
 });
@@ -1440,12 +1660,37 @@ const batchTotalCount = ref(0);              // 所有相关车辆的违规记�
 
 // 🆕 批量处理黑名单表单
 const batchBlacklistForm = ref({
-    shouldBlacklist: true,                   // 是否加入黑名单（固定为true）
-    blacklistType: "",                       // 黑名单类型（从ACMS接口动态获取）
+    processType: 'blacklist',                // 处理方式：blacklist=拉黑，mistake=误操作
+    shouldBlacklist: true,                   // 是否加入黑名单
+    blacklistType: "",                       // 黑名单类型（从 ACMS接口动态获取）
     blacklistReason: "",                     // 拉黑原因
     isPermanent: true,                       // 是否永久拉黑
     blacklistDateRange: []                   // 拉黑时间段（临时拉黑时使用）
 });
+
+// 🆕 批量处理车牌号相关
+const batchPlateNumbers = ref([]);          // 批量处理的车牌号列表
+const batchPlateCollapse = ref(['plates']); // 折叠面板状态（默认展开）
+
+// 🆕 违规统计相关变量
+const showStatisticsDialog = ref(false);    // 统计弹窗显示状态
+const statisticsLoading = ref(false);       // 统计数据加载状态
+const statisticsDateRange = ref([]);        // 统计时间范围
+const violationStats = ref({                // 违规统计数据
+    totalViolations: 0,
+    pendingViolations: 0,
+    processedViolations: 0,
+    blacklistedVehicles: 0
+});
+const topViolators = ref([]);               // 高频违规车辆Top10
+const topViolatorsTimeRange = ref('30');    // 高频违规时间范围
+const topAlerts = ref([]);                  // Top值提醒数据
+
+// 图表实例引用
+const violationTrendChartRef = ref(null);
+
+// 图表实例
+let violationTrendChart = null;
 
 // 🆕 单条处理相关变量
 const processShow = ref(false);              // 处理弹窗
@@ -1753,8 +1998,59 @@ const getData = () => {
             console.log('🚀 ~ file: IllegalRegiste.vue:29 ~ getViolations ~ res:', res);
             // 确保 tableData 始终是数组
             if (res.data.data && res.data.data.records && Array.isArray(res.data.data.records)) {
-                originalData.value = res.data.data.records; // 保存原始数据
-                pageTotal.value = res.data.data.total || 0; // 保存后端数据总数
+                let records = res.data.data.records;
+                
+                // 🔒 车场权限过滤：只显示用户管理的车场数据
+                if (!isAdmin.value && managedParks.value.length > 0) {
+                    const beforeFilter = records.length;
+                    
+                    // 🐛 详细调试：查看每条数据的parkName
+                    const parkNames = [...new Set(records.map(item => item.parkName || '未知'))];
+                    const sampleData = records.slice(0, 3).map(item => ({
+                        plateNumber: item.plateNumber,
+                        parkName: item.parkName,
+                        matched: managedParks.value.includes(item.parkName)
+                    }));
+                    
+                    console.log('🔍 [车场过滤] 过滤前详情:', {
+                        管理车场列表: Array.from(managedParks.value),
+                        数据中的车场: parkNames,
+                        样例数据: sampleData,
+                        总数: beforeFilter
+                    });
+                    
+                    records = records.filter(item => {
+                        // 如果没有parkName字段，则保留（兼容处理）
+                        if (!item.parkName) {
+                            console.log('⚠️ [车场过滤] 发现没有parkName的数据:', item.plateNumber);
+                            return true;
+                        }
+                        // 检查车场名称是否在用户管理的车场列表中
+                        return managedParks.value.includes(item.parkName);
+                    });
+                    
+                    console.log('🔒 [表格数据] 车场权限过滤:', {
+                        过滤前: beforeFilter,
+                        过滤后: records.length,
+                        被过滤: beforeFilter - records.length
+                    });
+                    
+                    if (beforeFilter === records.length) {
+                        console.log('✅ [车场过滤] 所有数据都属于用户管理的车场');
+                    }
+                } else {
+                    console.log('🔒 [表格数据] 管理员权限，显示所有车场数据');
+                }
+                
+                originalData.value = records; // 保存过滤后的数据
+                pageTotal.value = res.data.data.total || 0; // 使用后端返回的总数
+                
+                console.log('📊 [表格数据] 最终数据统计:', {
+                    后端总数: res.data.data.total,
+                    当前页数据: records.length,
+                    当前页码: query.pageNum,
+                    每页条数: query.pageSize
+                });
 
                 // 🐛 调试：打印第一条数据的字段
                 if (originalData.value.length > 0) {
@@ -1767,8 +2063,32 @@ const getData = () => {
                     applyFrontendFilter();
                 });
             } else if (res.data && Array.isArray(res.data)) {
-                originalData.value = res.data; // 保存原始数据
-                pageTotal.value = res.data.length; // 保存后端数据总数
+                let records = res.data;
+                
+                // 🔒 车场权限过滤：只显示用户管理的车场数据
+                if (!isAdmin.value && managedParks.value.length > 0) {
+                    const beforeFilter = records.length;
+                    
+                    const parkNames = [...new Set(records.map(item => item.parkName || '未知'))];
+                    console.log('🔍 [车场过滤] 过滤前详情:', {
+                        管理车场: Array.from(managedParks.value),
+                        数据车场: parkNames
+                    });
+                    
+                    records = records.filter(item => {
+                        if (!item.parkName) return true;
+                        return managedParks.value.includes(item.parkName);
+                    });
+                    
+                    console.log('🔒 [表格数据] 车场权限过滤:', {
+                        过滤前: beforeFilter,
+                        过滤后: records.length,
+                        被过滤: beforeFilter - records.length
+                    });
+                }
+                
+                originalData.value = records; // 保存过滤后的数据
+                pageTotal.value = records.length; // 使用过滤后的数据总数
 
                 // 🆕 批量获取每个车牌的违规次数
                 batchGetViolationCounts(originalData.value).then(() => {
@@ -1952,12 +2272,781 @@ const loadBlacklistTypesForPark = async (parkCode) => {
     }
 };
 
+// 🆕 违规统计相关函数
+
+// 加载违规统计数据
+const loadViolationStatistics = async () => {
+    try {
+        statisticsLoading.value = true;
+        console.log('📊 开始加载违规统计数据...');
+
+        // 模拟统计数据（实际使用时可以调用后端API）
+        const response = await violationApi.getViolations({
+            pageNum: 1,
+            pageSize: 1000,
+            processStatus: ''
+        });
+
+        const allData = response.data?.data?.records || response.data || [];
+
+        violationStats.value = {
+            totalViolations: allData.length,
+            pendingViolations: allData.filter(item => item.processStatus === 'pending').length,
+            processedViolations: allData.filter(item => item.processStatus === 'processed').length,
+            blacklistedVehicles: new Set(allData.filter(item => item.processStatus === 'processed').map(item => item.plateNumber)).size
+        };
+
+        console.log('✅ 违规统计数据加载成功:', violationStats.value);
+    } catch (error) {
+        console.error('❌ 加载违规统计数据失败:', error);
+        // 使用默认数据
+        violationStats.value = {
+            totalViolations: 0,
+            pendingViolations: 0,
+            processedViolations: 0,
+            blacklistedVehicles: 0
+        };
+    } finally {
+        statisticsLoading.value = false;
+    }
+};
+
+// 加载高频违规车辆Top10
+const loadTopViolators = async () => {
+    try {
+        console.log(`📊 开始加载高频违规车辆Top10（近${topViolatorsTimeRange.value}天）...`);
+
+        // 获取所有违规记录
+        const response = await violationApi.getViolations({
+            pageNum: 1,
+            pageSize: 1000
+        });
+
+        const allData = response.data?.data?.records || response.data || [];
+
+        // 按车牌号统计违规次数
+        const plateMap = new Map();
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - parseInt(topViolatorsTimeRange.value));
+
+        allData.forEach(item => {
+            const violationDate = new Date(item.createdAt);
+            if (violationDate >= cutoffDate) {
+                const plateNumber = item.plateNumber;
+                if (!plateMap.has(plateNumber)) {
+                    plateMap.set(plateNumber, {
+                        plateNumber,
+                        violationCount: 0,
+                        violationTypes: new Set(),
+                        lastViolationTime: null
+                    });
+                }
+                const plateData = plateMap.get(plateNumber);
+                plateData.violationCount += 1;
+
+                // 收集违规类型
+                if (item.violationType) {
+                    plateData.violationTypes.add(item.violationType);
+                }
+
+                // 更新最后违规时间
+                if (!plateData.lastViolationTime || violationDate > new Date(plateData.lastViolationTime)) {
+                    plateData.lastViolationTime = item.createdAt;
+                }
+            }
+        });
+
+        // 转换为数组并排序，取Top10
+        topViolators.value = Array.from(plateMap.values())
+            .map(item => ({
+                ...item,
+                violationTypes: Array.from(item.violationTypes).join(', ')
+            }))
+            .sort((a, b) => b.violationCount - a.violationCount)
+            .slice(0, 10);
+
+        console.log('✅ 高频违规车辆Top10加载成功:', topViolators.value);
+    } catch (error) {
+        console.error('❌ 加载高频违规车辆失败:', error);
+        topViolators.value = [];
+    }
+};
+
+// 刷新统计数据
+const refreshStatistics = async () => {
+    await Promise.all([
+        loadViolationStatistics(),
+        loadTopViolators()
+    ]);
+};
+
+// 获取排名样式类
+const getRankClass = (index) => {
+    if (index === 0) return 'rank-first';
+    if (index === 1) return 'rank-second';
+    if (index === 2) return 'rank-third';
+    return 'rank-normal';
+};
+
+// 获取车牌类型样式类
+const getPlateTypeClass = (plateNumber) => {
+    if (!plateNumber) return 'normal-plate';
+    // 新能源车牌判断（绿牌）
+    if (plateNumber.length === 8 && /^[\u4e00-\u9fa5][A-Z][A-Z0-9]{5}[A-Z0-9]$/.test(plateNumber)) {
+        return 'new-energy-plate';
+    }
+    return 'normal-plate';
+};
+
+// 获取进度条宽度
+const getProgressWidth = (current, max) => {
+    if (!max || max === 0) return '0%';
+    const percentage = Math.round((current / max) * 100);
+    return `${Math.min(percentage, 100)}%`;
+};
+
 // 页面加载时获取黑名单类型（默认按学校名称，供全局处理使用）
 loadBlacklistTypes();
 
+// 初始化图表
+const initCharts = () => {
+    if (violationTrendChartRef.value) {
+        violationTrendChart = echarts.init(violationTrendChartRef.value);
+    }
+};
+
+// 渲染违规趋势折线图
+const renderViolationTrendChart = (data, topViolatingPlates = []) => {
+    console.log('📈 开始渲染趋势图表, 数据条数:', data?.length);
+    
+    if (!violationTrendChart) {
+        console.error('❌ 图表实例未初始化');
+        return;
+    }
+    
+    if (!data || data.length === 0) {
+        console.warn('⚠️ 数据为空，显示空状态');
+        const emptyOption = {
+            title: {
+                text: '暂无数据',
+                left: 'center',
+                top: 'center',
+                textStyle: {
+                    fontSize: 16,
+                    color: '#9ca3af'
+                }
+            }
+        };
+        violationTrendChart.setOption(emptyOption);
+        return;
+    }
+    
+    // 按日期聚合数据
+    const dateMap = new Map();
+    let processedCount = 0;
+    
+    data.forEach((item, index) => {
+        if (item.createdAt !== undefined && item.createdAt !== null) {
+            // 处理不同的日期格式
+            let date = '';
+            try {
+                if (typeof item.createdAt === 'number') {
+                    // 如果是数字时间戳，转换为日期
+                    const dateObj = new Date(item.createdAt);
+                    date = formatDate(dateObj);
+
+                } else if (typeof item.createdAt === 'string') {
+                    // 如果是字符串，先尝试解析为数字
+                    const timestamp = parseInt(item.createdAt);
+                    if (!isNaN(timestamp) && timestamp > 1000000000000) {
+                        // 看起来像是时间戳
+                        const dateObj = new Date(timestamp);
+                        date = formatDate(dateObj);
+                    } else {
+                        // 正常的日期字符串
+                        if (item.createdAt.includes('T')) {
+                            date = item.createdAt.split('T')[0];
+                        } else if (item.createdAt.includes(' ')) {
+                            date = item.createdAt.split(' ')[0];
+                        } else {
+                            date = item.createdAt.substring(0, 10);
+                        }
+                        // 🐛 修复：将斜杠格式转换为短横线格式 (2025/11/20 → 2025-11-20)
+                        date = date.replace(/\//g, '-');
+                        console.log(`字符串日期转换 [${index}]:`, item.createdAt, '→', date);
+                    }
+                } else if (item.createdAt instanceof Date) {
+                    date = formatDate(item.createdAt);
+                    console.log(`Date对象转换 [${index}]:`, item.createdAt, '→', date);
+                }
+                
+                if (date && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    dateMap.set(date, (dateMap.get(date) || 0) + 1);
+                    processedCount++;
+                } else {
+                    console.warn(`日期格式不正确 [${index}]:`, item.createdAt, '→', date);
+                }
+            } catch (error) {
+                console.error(`处理日期错误 [${index}]:`, item.createdAt, error);
+            }
+        } else {
+            console.warn(`缺少createdAt字段 [${index}]:`, item);
+        }
+    });
+    
+    console.log('📅 日期聚合结果:', {
+        原始数据条数: data.length,
+        处理成功条数: processedCount,
+        日期数量: dateMap.size,
+        日期列表: Array.from(dateMap.keys()).sort()
+    });
+    
+    if (dateMap.size === 0) {
+        console.warn('⚠️ 没有有效的日期数据');
+        const noDateOption = {
+            title: {
+                text: '数据中缺少有效日期',
+                left: 'center',
+                top: 'center',
+                textStyle: {
+                    fontSize: 16,
+                    color: '#f59e0b'
+                }
+            }
+        };
+        violationTrendChart.setOption(noDateOption);
+        return;
+    }
+    
+    // 排序日期并获取对应的数量
+    const dates = Array.from(dateMap.keys()).sort();
+    const counts = dates.map(date => dateMap.get(date));
+    
+    console.log('📈 图表数据:', { dates, counts });
+    
+    // 计算统计数据
+    const maxValue = Math.max(...counts);
+    const minValue = Math.min(...counts);
+    const avgValue = (counts.reduce((sum, val) => sum + val, 0) / counts.length).toFixed(1);
+    const maxIndex = counts.indexOf(maxValue);
+    const minIndex = counts.indexOf(minValue);
+    
+    // 生成Top值提醒
+    generateTopAlerts({
+        maxValue,
+        minValue,
+        avgValue: parseFloat(avgValue),
+        maxDate: dates[maxIndex],
+        minDate: dates[minIndex],
+        totalDays: dates.length,
+        totalViolations: data.length,
+        dates,
+        counts,
+        topViolatingPlates
+    });
+    
+    const option = {
+        backgroundColor: 'transparent',
+        title: {
+            text: `总计: ${data.length} 条违规记录`,
+            left: 'center',
+            top: 5,
+            textStyle: {
+                fontSize: 16,
+                fontWeight: 'bold',
+                color: '#1f2937'
+            }
+        },
+        tooltip: {
+            trigger: 'axis',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            borderColor: '#e5e7eb',
+            borderWidth: 1,
+            textStyle: {
+                color: '#374151',
+                fontSize: 13
+            },
+            formatter: (params) => {
+                const param = params[0];
+                const date = param.axisValue;
+                const value = param.value;
+                const percentage = ((value / data.length) * 100).toFixed(1);
+                
+                return `
+                    <div style="padding: 8px;">
+                        <div style="font-weight: bold; margin-bottom: 6px; color: #1f2937;">${date}</div>
+                        <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                            <span style="display: inline-block; width: 8px; height: 8px; background: #667eea; border-radius: 50%; margin-right: 6px;"></span>
+                            <span>违规数量: <strong>${value}</strong> 条</span>
+                        </div>
+                        <div style="font-size: 12px; color: #6b7280;">占总数的 ${percentage}%</div>
+                    </div>
+                `;
+            },
+            axisPointer: {
+                type: 'cross',
+                crossStyle: {
+                    color: '#667eea',
+                    width: 1,
+                    type: 'dashed'
+                }
+            }
+        },
+        grid: {
+            left: '5%',
+            right: '5%',
+            bottom: '8%',
+            top: '20%',
+            containLabel: true
+        },
+        xAxis: {
+            type: 'category',
+            data: dates,
+            boundaryGap: false,
+            axisLabel: {
+                rotate: 45,
+                color: '#6b7280',
+                fontSize: 11,
+                formatter: (value) => {
+                    return value.substring(5);
+                }
+            },
+            axisLine: {
+                lineStyle: {
+                    color: '#e5e7eb'
+                }
+            },
+            axisTick: {
+                show: false
+            }
+        },
+        yAxis: {
+            type: 'value',
+            name: '违规数量',
+            nameTextStyle: {
+                color: '#6b7280',
+                fontSize: 12
+            },
+            minInterval: 1,
+            axisLabel: {
+                color: '#6b7280',
+                fontSize: 11
+            },
+            axisLine: {
+                show: false
+            },
+            axisTick: {
+                show: false
+            },
+            splitLine: {
+                lineStyle: {
+                    color: '#f3f4f6',
+                    type: 'dashed'
+                }
+            }
+        },
+        series: [{
+            name: '违规数量',
+            type: 'line',
+            smooth: true,
+            data: counts,
+            symbol: 'circle',
+            symbolSize: 6,
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(99, 102, 241, 0.3)' },
+                    { offset: 0.5, color: 'rgba(99, 102, 241, 0.15)' },
+                    { offset: 1, color: 'rgba(99, 102, 241, 0.05)' }
+                ])
+            },
+            lineStyle: {
+                color: '#6366f1',
+                width: 3,
+                shadowColor: 'rgba(99, 102, 241, 0.3)',
+                shadowBlur: 10,
+                shadowOffsetY: 3
+            },
+            itemStyle: {
+                color: '#6366f1',
+                borderWidth: 2,
+                borderColor: '#fff',
+                shadowColor: 'rgba(99, 102, 241, 0.5)',
+                shadowBlur: 8
+            },
+            emphasis: {
+                itemStyle: {
+                    color: '#4f46e5',
+                    borderWidth: 3,
+                    shadowBlur: 15
+                },
+                lineStyle: {
+                    width: 4
+                }
+            },
+            markPoint: {
+                symbol: 'pin',
+                symbolSize: 50,
+                data: [
+                    {
+                        name: '最高值',
+                        value: maxValue,
+                        xAxis: dates[maxIndex],
+                        yAxis: maxValue,
+                        itemStyle: {
+                            color: '#ef4444'
+                        },
+                        label: {
+                            formatter: '最高\n{c}条',
+                            fontSize: 11,
+                            fontWeight: 'bold'
+                        }
+                    },
+                    {
+                        name: '最低值',
+                        value: minValue,
+                        xAxis: dates[minIndex],
+                        yAxis: minValue,
+                        itemStyle: {
+                            color: '#10b981'
+                        },
+                        label: {
+                            formatter: '最低\n{c}条',
+                            fontSize: 11,
+                            fontWeight: 'bold'
+                        }
+                    }
+                ]
+            },
+            markLine: {
+                silent: true,
+                lineStyle: {
+                    color: '#f59e0b',
+                    type: 'dashed',
+                    width: 2
+                },
+                data: [
+                    {
+                        type: 'average',
+                        name: '平均值',
+                        label: {
+                            formatter: '平均: {c}条',
+                            position: 'end',
+                            fontSize: 11,
+                            color: '#f59e0b',
+                            fontWeight: 'bold'
+                        }
+                    }
+                ]
+            }
+        }]
+    };
+    
+    violationTrendChart.setOption(option);
+};
+
+// 格式化车牌号码为带样式的HTML
+const formatPlateNumberWithStyle = (plateNumber) => {
+    if (!plateNumber) return '';
+    const plateType = getPlateType(plateNumber);
+    return `<span class="styled-plate-number ${plateType}">${plateNumber}</span>`;
+};
+
+// 生成Top值提醒（主要显示高频违规车牌）
+const generateTopAlerts = (stats) => {
+    const alerts = [];
+    const { topViolatingPlates } = stats;
+    
+    // 高频违规车牌提醒
+    if (topViolatingPlates && topViolatingPlates.length > 0) {
+        const topPlate = topViolatingPlates[0];
+        
+        // 最高违规车牌提醒
+        if (topPlate.count >= 10) {
+            alerts.push({
+                type: 'danger',
+                icon: 'WarningFilled',
+                message: `车牌 ${formatPlateNumberWithStyle(topPlate.plateNumber)} 违规 ${topPlate.count} 次，为最高频违规车辆，建议立即处理！`,
+                isHtml: true
+            });
+        } else if (topPlate.count >= 5) {
+            alerts.push({
+                type: 'warning',
+                icon: 'CarFilled',
+                message: `车牌 ${formatPlateNumberWithStyle(topPlate.plateNumber)} 违规 ${topPlate.count} 次，需要重点关注`,
+                isHtml: true
+            });
+        }
+        
+        // Top3车牌提醒
+        const top3 = topViolatingPlates.slice(0, 3);
+        if (top3.length >= 3) {
+            const plateList = top3.map(p => `${formatPlateNumberWithStyle(p.plateNumber)}(${p.count}次)`).join('、');
+            alerts.push({
+                type: 'info',
+                icon: 'InfoFilled',
+                message: `违规次数Top3车牌：${plateList}`,
+                isHtml: true
+            });
+        }
+        
+        // 多辆高频违规提醒
+        const highFrequencyPlates = topViolatingPlates.filter(p => p.count >= 3);
+        if (highFrequencyPlates.length >= 5) {
+            alerts.push({
+                type: 'warning',
+                icon: 'WarningFilled',
+                message: `发现 ${highFrequencyPlates.length} 辆车违规次数超过3次，建议加强管理力度`
+            });
+        }
+        
+        // 重复违规者提醒
+        const repeatOffenders = topViolatingPlates.filter(p => p.count >= 8);
+        if (repeatOffenders.length > 0) {
+            const plateNames = repeatOffenders.map(p => formatPlateNumberWithStyle(p.plateNumber)).join('、');
+            alerts.push({
+                type: 'danger',
+                icon: 'UserFilled',
+                message: `重复违规者：${plateNames}，建议采取严厉措施`,
+                isHtml: true
+            });
+        }
+    }
+    
+    // 日均违规数提醒
+    if (stats.avgValue >= 5) {
+        alerts.push({
+            type: 'warning',
+            icon: 'TrendCharts',
+            message: `日均违规数 ${stats.avgValue} 条，超出正常范围`
+        });
+    } else if (stats.avgValue <= 1) {
+        alerts.push({
+            type: 'success',
+            icon: 'Check',
+            message: `日均违规数仅 ${stats.avgValue} 条，管理效果良好！`
+        });
+    }
+    
+    // 单日最高值提醒
+    if (stats.maxValue >= 8) {
+        alerts.push({
+            type: 'warning',
+            icon: 'WarningFilled',
+            message: `${stats.maxDate} 单日违规数达 ${stats.maxValue} 条，需重点关注`
+        });
+    }
+    
+    topAlerts.value = alerts;
+    console.log('🚨 生成车牌Top提醒:', alerts);
+};
+
+// 格式化日期为yyyy-MM-dd
+const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+// 加载统计数据（包含所有图表）
+const loadStatisticsData = async () => {
+    try {
+        statisticsLoading.value = true;
+        console.log('📊 开始加载统计数据...');
+        console.log('📅 当前选择的时间范围:', statisticsDateRange.value);
+        
+        // 构建查询参数 - 测试不同的分页参数名
+        const params = {
+            // 常见的分页参数名
+            pageNum: 1,
+            pageSize: 1000,
+            current: 1,     // MyBatis Plus 常用
+            size: 1000,     // MyBatis Plus 常用
+            page: 1,        // 一些框架使用
+            limit: 1000,    // 一些框架使用
+            offset: 0       // 偏移量
+        };
+        
+        // 🔒 带上主表格的车场筛选条件，确保统计数据与主表格一致
+        if (query.community && query.community.trim()) {
+            params.community = query.community.trim();
+            console.log('🏢 统计查询带上车场条件:', params.community);
+        }
+        
+        // 如果选择了时间范围
+        if (statisticsDateRange.value && statisticsDateRange.value.length === 2) {
+            params.startDate = formatDate(statisticsDateRange.value[0]);
+            params.endDate = formatDate(statisticsDateRange.value[1]);
+            console.log('📅 查询时间范围:', params.startDate, '至', params.endDate);
+            console.log('📅 原始Date对象:', statisticsDateRange.value[0], '至', statisticsDateRange.value[1]);
+        } else {
+            console.warn('⚠️ 未选择时间范围，将查询所有数据');
+        }
+        
+        console.log('🔍 API请求参数:', JSON.stringify(params, null, 2));
+        
+        let allData = [];
+        let currentPage = 1;
+        let totalPages = 1;
+        
+        // 循环获取所有分页数据
+        do {
+            const currentParams = { ...params, pageNum: currentPage };
+            console.log(`🔍 请求第${currentPage}页数据，参数:`, currentParams);
+            
+            const response = await violationApi.getViolations(currentParams);
+            console.log(`📡 第${currentPage}页API响应:`, {
+                status: response.status,
+                dataStructure: response.data ? Object.keys(response.data) : 'no data',
+                recordsCount: response.data?.data?.records?.length || 0,
+                totalCount: response.data?.data?.total || 'unknown',
+                currentPage: response.data?.data?.current || currentPage,
+                totalPages: response.data?.data?.pages || 1
+            });
+            
+            const pageData = response.data?.data?.records || response.data || [];
+            allData = allData.concat(pageData);
+            
+            // 更新分页信息
+            totalPages = response.data?.data?.pages || 1;
+            const totalCount = response.data?.data?.total || 0;
+            
+            console.log(`📊 已获取 ${allData.length}/${totalCount} 条数据`);
+            
+            currentPage++;
+            
+            // 防止无限循环
+            if (currentPage > 100) {
+                console.warn('⚠️ 达到最大页数限制，停止获取');
+                break;
+            }
+        } while (currentPage <= totalPages);
+        
+        console.log('📊 最终获取到的数据总数:', allData.length);
+        
+        // 🔒 车场权限过滤
+        let filteredData = allData;
+        if (!isAdmin.value && managedParks.value.length > 0) {
+            const beforeFilter = allData.length;
+            filteredData = allData.filter(item => {
+                // 如果没有parkName字段，则保留（兼容处理）
+                if (!item.parkName) return true;
+                // 检查车场名称是否在用户管理的车场列表中
+                return managedParks.value.includes(item.parkName);
+            });
+            console.log('🔒 车场权限过滤:', {
+                过滤前: beforeFilter,
+                过滤后: filteredData.length,
+                管理车场: managedParks.value
+            });
+        } else {
+            console.log('🔒 管理员权限，显示所有车场数据');
+        }
+        
+        console.log('📊 权限过滤后的数据总数:', filteredData.length);
+        
+        // 更新统计卡片数据（使用过滤后的数据）
+        violationStats.value = {
+            totalViolations: filteredData.length,
+            pendingViolations: filteredData.filter(item => item.processStatus === 'pending').length,
+            processedViolations: filteredData.filter(item => item.processStatus === 'processed').length,
+            blacklistedVehicles: new Set(filteredData.filter(item => item.processStatus === 'processed').map(item => item.plateNumber)).size
+        };
+        
+        // 分析数据的时间分布（使用过滤后的数据）
+        if (filteredData.length > 0) {
+            const timeAnalysis = {
+                总数据量: filteredData.length,
+                时间字段类型: typeof filteredData[0].createdAt,
+                最早时间: null,
+                最晚时间: null,
+                样例数据: filteredData.slice(0, 3).map(item => ({
+                    plateNumber: item.plateNumber,
+                    createdAt: item.createdAt,
+                    processStatus: item.processStatus,
+                    parkName: item.parkName
+                }))
+            };
+            
+            // 计算时间范围
+            const timestamps = filteredData
+                .map(item => typeof item.createdAt === 'number' ? item.createdAt : parseInt(item.createdAt))
+                .filter(ts => !isNaN(ts))
+                .sort((a, b) => a - b);
+                
+            if (timestamps.length > 0) {
+                timeAnalysis.最早时间 = formatDate(new Date(timestamps[0]));
+                timeAnalysis.最晚时间 = formatDate(new Date(timestamps[timestamps.length - 1]));
+            }
+            
+            console.log('📊 数据时间分析:', timeAnalysis);
+        }
+        
+        console.log('📊 准备渲染趋势图表...');
+        
+        // 计算车牌违规排行（使用过滤后的数据）
+        const plateViolationMap = new Map();
+        filteredData.forEach(item => {
+            const plateNumber = item.plateNumber;
+            if (plateNumber) {
+                plateViolationMap.set(plateNumber, (plateViolationMap.get(plateNumber) || 0) + 1);
+            }
+        });
+        
+        const topViolatingPlates = Array.from(plateViolationMap.entries())
+            .map(([plateNumber, count]) => ({ plateNumber, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10);
+        
+        console.log('🚗 高频违规车牌Top10:', topViolatingPlates);
+        
+        // 渲染趋势图表（使用过滤后的数据）
+        renderViolationTrendChart(filteredData, topViolatingPlates);
+        
+        console.log('✅ 统计数据加载成功');
+    } catch (error) {
+        console.error('❌ 加载统计数据失败:', error);
+        ElMessage.error('加载统计数据失败');
+    } finally {
+        statisticsLoading.value = false;
+    }
+};
+
+// 处理时间范围变化
+const handleDateRangeChange = () => {
+    console.log('时间范围变化:', statisticsDateRange.value);
+};
+
+// 监听统计弹窗打开，初始化图表
+watch(showStatisticsDialog, (newVal) => {
+    if (newVal) {
+        console.log('📊 打开统计弹窗...');
+        // 延迟初始化图表，确保DOM已渲染
+        setTimeout(() => {
+            initCharts();
+            // 设置默认时间范围（最近30天）
+            const end = new Date();
+            const start = new Date();
+            start.setDate(start.getDate() - 30);
+            statisticsDateRange.value = [start, end];
+            // 加载数据
+            loadStatisticsData();
+        }, 100);
+    }
+});
+
 // 🆕 页面初始化
 onMounted(() => {
-    console.log('🚀 违规记录页面初始化');
+    console.log('🚀🚗 违规记录页面初始化');
+    
+    // 监听按钮显示状态
+    watchEffect(() => {
+        console.log('🔍 [违规统计按钮] watchEffect - 当前显示状态:', showStatisticsButton.value);
+    });
+    
+    console.log('');
 
     // 处理URL参数，自动填充搜索条件
     handleUrlParams();
@@ -2149,7 +3238,7 @@ const handleReset = () => {
     query.violationType = "";
     query.status = "";
     query.severity = "";
-    
+
     // 🔐 重置时根据用户权限设置默认车场
     if (!isAdmin.value && managedParks.value.length === 1) {
         // 普通用户且只有一个授权车场，默认选中该车场
@@ -2161,7 +3250,7 @@ const handleReset = () => {
         // 管理员，清空选择
         query.community = "";
     }
-    
+
     query.dateRange = [];
     query.processStatus = "";      // 🆕 重置处理状态
     query.processType = "";        // 🆕 重置处理方式
@@ -2218,6 +3307,7 @@ const handleProcess = async (row) => {
                     processRemark: '',
                     processAll: true,
                     violationCount: violationCount,
+                    processType: 'blacklist', // 默认拉黑处理
                     // 黑名单相关字段
                     shouldBlacklist: true,
                     blacklistType: blacklistTypeOptions.value.length > 0 ? blacklistTypeOptions.value[0].value : "parking_violation",
@@ -2236,6 +3326,7 @@ const handleProcess = async (row) => {
                         processRemark: '',
                         processAll: false,
                         violationCount: 1,
+                        processType: 'blacklist', // 默认拉黑处理
                         // 黑名单相关字段
                         shouldBlacklist: true,
                         blacklistType: blacklistTypeOptions.value.length > 0 ? blacklistTypeOptions.value[0].value : "parking_violation",
@@ -2256,6 +3347,7 @@ const handleProcess = async (row) => {
                 processRemark: '',
                 processAll: false,
                 violationCount: 1,
+                processType: 'blacklist', // 默认拉黑处理
                 // 黑名单相关字段
                 shouldBlacklist: true,
                 blacklistType: blacklistTypeOptions.value.length > 0 ? blacklistTypeOptions.value[0].value : "parking_violation",
@@ -2274,7 +3366,13 @@ const handleProcess = async (row) => {
             violationType: row.violationType,
             processRemark: '',
             processAll: false,
-            violationCount: 1
+            violationCount: 1,
+            processType: 'blacklist', // 默认拉黑处理
+            shouldBlacklist: true,
+            blacklistType: blacklistTypeOptions.value.length > 0 ? blacklistTypeOptions.value[0].value : "parking_violation",
+            blacklistReason: "",
+            isPermanent: true,
+            blacklistDateRange: []
         };
         processShow.value = true;
     }
@@ -2283,18 +3381,27 @@ const handleProcess = async (row) => {
 // 🆕 确认单条处理
 const confirmProcess = async () => {
     try {
-        // 验证黑名单相关字段（处理违规记录必须拉黑）
-        if (!processForm.value.blacklistType) {
-            ElMessage.warning('请选择黑名单类型');
-            return;
-        }
-        if (!processForm.value.blacklistReason || processForm.value.blacklistReason.trim().length < 5) {
-            ElMessage.warning('请输入拉黑原因（至少5个字符）');
-            return;
-        }
-        if (!processForm.value.isPermanent && (!processForm.value.blacklistDateRange || processForm.value.blacklistDateRange.length !== 2)) {
-            ElMessage.warning('请选择拉黑时间段');
-            return;
+        // 根据处理方式进行不同的验证
+        if (processForm.value.processType === 'blacklist') {
+            // 拉黑处理：验证黑名单相关字段
+            if (!processForm.value.blacklistType) {
+                ElMessage.warning('请选择黑名单类型');
+                return;
+            }
+            if (!processForm.value.blacklistReason || processForm.value.blacklistReason.trim().length < 5) {
+                ElMessage.warning('请输入拉黑原因（至少5个字符）');
+                return;
+            }
+            if (!processForm.value.isPermanent && (!processForm.value.blacklistDateRange || processForm.value.blacklistDateRange.length !== 2)) {
+                ElMessage.warning('请选择拉黑时间段');
+                return;
+            }
+        } else if (processForm.value.processType === 'mistake') {
+            // 误操作处理：验证备注必填
+            if (!processForm.value.processRemark || processForm.value.processRemark.trim().length < 5) {
+                ElMessage.warning('请说明误操作原因（至少5个字符）');
+                return;
+            }
         }
 
         processing.value = true;
@@ -2303,16 +3410,16 @@ const confirmProcess = async () => {
         const username = localStorage.getItem("ms_username") || "管理员";
         const userId = localStorage.getItem("ms_userid") || "unknown";
 
-        // 构建请求参数
+        // 构建请求参数（根据处理方式不同）
         const processParams = {
             processRemark: processForm.value.processRemark,
             operatorName: username,
-            shouldBlacklist: processForm.value.shouldBlacklist,
-            blacklistType: processForm.value.blacklistType,
-            blacklistReason: processForm.value.blacklistReason,
-            isPermanent: processForm.value.isPermanent,
-            blacklistStartTime: processForm.value.isPermanent ? null : processForm.value.blacklistDateRange[0],
-            blacklistEndTime: processForm.value.isPermanent ? null : processForm.value.blacklistDateRange[1]
+            shouldBlacklist: processForm.value.processType === 'blacklist', // 根据处理方式决定是否拉黑
+            blacklistType: processForm.value.processType === 'blacklist' ? processForm.value.blacklistType : null,
+            blacklistReason: processForm.value.processType === 'blacklist' ? processForm.value.blacklistReason : null,
+            isPermanent: processForm.value.processType === 'blacklist' ? processForm.value.isPermanent : null,
+            blacklistStartTime: processForm.value.processType === 'blacklist' && !processForm.value.isPermanent ? processForm.value.blacklistDateRange[0] : null,
+            blacklistEndTime: processForm.value.processType === 'blacklist' && !processForm.value.isPermanent ? processForm.value.blacklistDateRange[1] : null
         };
 
         let response;
@@ -2331,9 +3438,17 @@ const confirmProcess = async () => {
         }
 
         if (response.data && response.data.code === '0') {
-            const message = processForm.value.processAll
-                ? `成功处理 ${processForm.value.violationCount} 条违规记录，已加入黑名单`
-                : `处理成功，已加入黑名单`;
+            // 根据处理方式显示不同的成功消息
+            let message;
+            if (processForm.value.processType === 'mistake') {
+                message = processForm.value.processAll
+                    ? `成功处理 ${processForm.value.violationCount} 条违规记录（误操作，未拉黑）`
+                    : `处理成功（误操作，未拉黑）`;
+            } else {
+                message = processForm.value.processAll
+                    ? `成功处理 ${processForm.value.violationCount} 条违规记录，已加入黑名单`
+                    : `处理成功，已加入黑名单`;
+            }
             ElMessage.success(message);
 
             // 🆕 检查是否需要发送违规提醒短信
@@ -2445,6 +3560,26 @@ const handleBatchProcess = async () => {
         // 获取所有选中车辆的车牌号（去重）
         const plateNumbers = [...new Set(multipleSelection.value.map(item => item.plateNumber))];
 
+        // 🆕 初始化车牌号列表
+        batchPlateNumbers.value = plateNumbers;
+
+        // 🆕 确保黑名单类型已加载
+        if (blacklistTypeOptions.value.length === 0) {
+            console.log('🔄 黑名单类型未加载，开始加载...');
+            await loadBlacklistTypes();
+        }
+
+        // 🆕 初始化批量处理表单
+        batchBlacklistForm.value = {
+            processType: 'blacklist',
+            shouldBlacklist: true,
+            blacklistType: blacklistTypeOptions.value.length > 0 ? blacklistTypeOptions.value[0].value : '',
+            blacklistReason: '',
+            isPermanent: true,
+            blacklistDateRange: []
+        };
+        batchProcessRemark.value = '';
+
         // 统计所有相关车辆的未处理违规记录总数
         let totalCount = 0;
         for (const plateNumber of plateNumbers) {
@@ -2476,13 +3611,11 @@ const handleBatchProcess = async () => {
                 // 用户选择全部处理
                 batchProcessAll.value = true;
                 showBatchProcessDialog.value = true;
-                batchProcessRemark.value = '';
             }).catch((action) => {
                 if (action === 'cancel') {
                     // 用户选择仅处理选中
                     batchProcessAll.value = false;
                     showBatchProcessDialog.value = true;
-                    batchProcessRemark.value = '';
                 }
                 // 如果是 close，则不做任何操作
             });
@@ -2490,7 +3623,6 @@ const handleBatchProcess = async () => {
             // 总数等于选中数量，直接处理
             batchProcessAll.value = false;
             showBatchProcessDialog.value = true;
-            batchProcessRemark.value = '';
         }
     } catch (error) {
         console.error('获取违规记录失败:', error);
@@ -2498,25 +3630,33 @@ const handleBatchProcess = async () => {
         batchProcessAll.value = false;
         batchTotalCount.value = multipleSelection.value.length;
         showBatchProcessDialog.value = true;
-        batchProcessRemark.value = '';
     }
 };
 
 // 🆕 确认批量处理
 const confirmBatchProcess = async () => {
     try {
-        // 验证黑名单相关字段（批量处理必须拉黑）
-        if (!batchBlacklistForm.value.blacklistType) {
-            ElMessage.warning('请选择黑名单类型');
-            return;
-        }
-        if (!batchBlacklistForm.value.blacklistReason || batchBlacklistForm.value.blacklistReason.trim().length < 5) {
-            ElMessage.warning('请输入拉黑原因（至少5个字符）');
-            return;
-        }
-        if (!batchBlacklistForm.value.isPermanent && (!batchBlacklistForm.value.blacklistDateRange || batchBlacklistForm.value.blacklistDateRange.length !== 2)) {
-            ElMessage.warning('请选择拉黑时间段');
-            return;
+        // 根据处理方式进行不同的验证
+        if (batchBlacklistForm.value.processType === 'blacklist') {
+            // 拉黑处理：验证黑名单相关字段
+            if (!batchBlacklistForm.value.blacklistType) {
+                ElMessage.warning('请选择黑名单类型');
+                return;
+            }
+            if (!batchBlacklistForm.value.blacklistReason || batchBlacklistForm.value.blacklistReason.trim().length < 5) {
+                ElMessage.warning('请输入拉黑原因（至少5个字符）');
+                return;
+            }
+            if (!batchBlacklistForm.value.isPermanent && (!batchBlacklistForm.value.blacklistDateRange || batchBlacklistForm.value.blacklistDateRange.length !== 2)) {
+                ElMessage.warning('请选择拉黑时间段');
+                return;
+            }
+        } else if (batchBlacklistForm.value.processType === 'mistake') {
+            // 误操作处理：验证备注必填
+            if (!batchProcessRemark.value || batchProcessRemark.value.trim().length < 5) {
+                ElMessage.warning('请说明误操作原因（至少5个字符）');
+                return;
+            }
         }
 
         batchProcessing.value = true;
@@ -2525,16 +3665,16 @@ const confirmBatchProcess = async () => {
         const username = localStorage.getItem("ms_username") || "管理员";
         const userId = localStorage.getItem("ms_userid") || "unknown";
 
-        // 构建请求参数
+        // 构建请求参数（根据处理方式不同）
         const processParams = {
             processRemark: batchProcessRemark.value,
             operatorName: username,
-            shouldBlacklist: batchBlacklistForm.value.shouldBlacklist,
-            blacklistType: batchBlacklistForm.value.blacklistType,
-            blacklistReason: batchBlacklistForm.value.blacklistReason,
-            isPermanent: batchBlacklistForm.value.isPermanent,
-            blacklistStartTime: batchBlacklistForm.value.isPermanent ? null : batchBlacklistForm.value.blacklistDateRange[0],
-            blacklistEndTime: batchBlacklistForm.value.isPermanent ? null : batchBlacklistForm.value.blacklistDateRange[1]
+            shouldBlacklist: batchBlacklistForm.value.processType === 'blacklist', // 根据处理方式决定是否拉黑
+            blacklistType: batchBlacklistForm.value.processType === 'blacklist' ? batchBlacklistForm.value.blacklistType : null,
+            blacklistReason: batchBlacklistForm.value.processType === 'blacklist' ? batchBlacklistForm.value.blacklistReason : null,
+            isPermanent: batchBlacklistForm.value.processType === 'blacklist' ? batchBlacklistForm.value.isPermanent : null,
+            blacklistStartTime: batchBlacklistForm.value.processType === 'blacklist' && !batchBlacklistForm.value.isPermanent ? batchBlacklistForm.value.blacklistDateRange[0] : null,
+            blacklistEndTime: batchBlacklistForm.value.processType === 'blacklist' && !batchBlacklistForm.value.isPermanent ? batchBlacklistForm.value.blacklistDateRange[1] : null
         };
 
         let response;
@@ -2556,9 +3696,17 @@ const confirmBatchProcess = async () => {
 
         if (response.data && response.data.code === '0') {
             const result = response.data.data;
-            const message = batchProcessAll.value
-                ? `批量处理完成！共处理 ${batchTotalCount.value} 条违规记录，已加入黑名单`
-                : `批量处理完成！成功: ${result.success}条，失败: ${result.failed}条，已加入黑名单`;
+            // 根据处理方式显示不同的成功消息
+            let message;
+            if (batchBlacklistForm.value.processType === 'mistake') {
+                message = batchProcessAll.value
+                    ? `批量处理完成！共处理 ${batchTotalCount.value} 条违规记录（误操作，未拉黑）`
+                    : `批量处理完成！成功: ${result.success}条，失败: ${result.failed}条（误操作，未拉黑）`;
+            } else {
+                message = batchProcessAll.value
+                    ? `批量处理完成！共处理 ${batchTotalCount.value} 条违规记录，已加入黑名单`
+                    : `批量处理完成！成功: ${result.success}条，失败: ${result.failed}条，已加入黑名单`;
+            }
             ElMessage.success(message);
 
             // 🆕 批量处理违规提醒短信
@@ -2680,7 +3828,7 @@ const handleExport = async () => {
 
         // 从后端获取数据
         const res = await violationApi.getViolations(params);
-        
+
         if (!res.data.data || !res.data.data.records || res.data.data.records.length === 0) {
             loading.close();
             ElMessage.warning('没有可导出的数据');
@@ -2695,7 +3843,7 @@ const handleExport = async () => {
             if (plateNumbers.length > 0) {
                 const countMap = {};
                 const batchSize = 20;
-                
+
                 for (let i = 0; i < plateNumbers.length; i += batchSize) {
                     const batch = plateNumbers.slice(i, i + batchSize);
                     const countPromises = batch.map(async (plateNumber) => {
@@ -2714,13 +3862,13 @@ const handleExport = async () => {
                             return { plateNumber, count: 0 };
                         }
                     });
-                    
+
                     const results = await Promise.all(countPromises);
                     results.forEach(({ plateNumber, count }) => {
                         countMap[plateNumber] = count;
                     });
                 }
-                
+
                 // 附加违规次数
                 exportData.forEach(record => {
                     record.violationCount = countMap[record.plateNumber] || 0;
@@ -2772,8 +3920,8 @@ const handleExport = async () => {
             // 处理状态
             row['处理状态'] = item.processStatus === 'processed' ? '已处理' : '未处理';
             if (item.processType) {
-                row['处理方式'] = item.processType === 'auto_blacklist' ? '系统自动拉黑' : 
-                                 (item.processType === 'manual' ? '手动处理' : item.processType);
+                row['处理方式'] = item.processType === 'auto_blacklist' ? '系统自动拉黑' :
+                    (item.processType === 'manual' ? '手动处理' : item.processType);
             }
             if (item.processedBy) row['处理人'] = item.processedBy;
             if (item.processedAt) row['处理时间'] = formatTimestamp(item.processedAt);
@@ -2812,15 +3960,15 @@ const handleExport = async () => {
         const today = new Date();
         const exportDateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
         const titleText = `${parkName}违规记录导出表${exportDateStr}`;
-        
+
         // 获取列数
         const firstRow = exportList[0];
         const columnCount = Object.keys(firstRow).length;
-        
+
         // 添加标题行
         XLSX.utils.sheet_add_aoa(worksheet, [[titleText]], { origin: 'A1' });
         XLSX.utils.sheet_add_aoa(worksheet, [['']], { origin: 'A2' }); // 空行
-        
+
         // 从第3行开始添加数据
         XLSX.utils.sheet_add_json(worksheet, exportList, { origin: 'A3' });
 
@@ -2874,7 +4022,7 @@ const handleExport = async () => {
         const fileName = `${parkName}违规记录导出表${exportDateStr}.xlsx`;
 
         // 导出文件（支持样式）
-        XLSX.writeFile(workbook, fileName, { 
+        XLSX.writeFile(workbook, fileName, {
             bookType: 'xlsx',
             bookSST: false,
             type: 'binary'
@@ -2893,11 +4041,11 @@ const handleExport = async () => {
             `导出违规记录数据：${exportList.length}条`,
             null,
             null,
-            JSON.stringify({ 
-                action: "export", 
+            JSON.stringify({
+                action: "export",
                 count: exportList.length,
                 filters: params,
-                timestamp: new Date().toISOString() 
+                timestamp: new Date().toISOString()
             })
         ).catch(err => {
             console.error("记录活动日志失败:", err);
@@ -3399,11 +4547,11 @@ const parseOldDescriptionFormat = (description) => {
         isPermanent: true,
         blacklistDays: 30
     };
-    
+
     if (!description || typeof description !== 'string') {
         return result;
     }
-    
+
     try {
         // 解析夜间时间段：夜间(23:00-06:00)
         const nightTimeMatch = description.match(/夜间\((\d{2}:\d{2})-(\d{2}:\d{2})\)/);
@@ -3411,13 +4559,13 @@ const parseOldDescriptionFormat = (description) => {
             result.nightStartTime = nightTimeMatch[1];
             result.nightEndTime = nightTimeMatch[2];
         }
-        
+
         // 解析小时数：超过2小时
         const hoursMatch = description.match(/超过(\d+)小时/);
         if (hoursMatch) {
             result.nightTimeHours = parseInt(hoursMatch[1]);
         }
-        
+
         // 解析VIP检查模式和类型：[待检:类型1,类型2] 或 [免检:类型1,类型2]
         const vipMatch = description.match(/\[(待检|免检):(.*?)\]/);
         if (vipMatch) {
@@ -3427,7 +4575,7 @@ const parseOldDescriptionFormat = (description) => {
                 result.vipTicketTypes = typesStr.split(',').map(t => t.trim()).filter(t => t);
             }
         }
-        
+
         // 解析拉黑天数：[拉黑天数:永久] 或 [拉黑天数:30]
         const daysMatch = description.match(/\[拉黑天数:(.*?)\]/);
         if (daysMatch) {
@@ -3440,23 +4588,23 @@ const parseOldDescriptionFormat = (description) => {
                 result.blacklistDays = parseInt(daysStr) || 30;
             }
         }
-        
+
         // 解析黑名单类型：[黑名单类型:类型名]
         const blacklistMatch = description.match(/\[黑名单类型:(.*?)\]/);
         if (blacklistMatch) {
             const blacklistTypeName = blacklistMatch[1].trim();
             // 尝试匹配黑名单类型选项
-            const matchedOption = blacklistTypeOptions.value.find(opt => 
+            const matchedOption = blacklistTypeOptions.value.find(opt =>
                 opt.label === blacklistTypeName || opt.value.includes(blacklistTypeName)
             );
             result.blacklistName = matchedOption ? matchedOption.value : '';
         }
-        
+
         console.log('📝 解析旧格式description结果:', result);
     } catch (e) {
         console.error('❌ 解析旧格式description失败:', e);
     }
-    
+
     return result;
 };
 
@@ -3467,7 +4615,7 @@ const handleWanXiangConfigDialog = async () => {
     try {
         // 加载月票类型列表
         await loadTicketTypesForPark(wanXiangConfigForm.parkCode);
-        
+
         // 🆕 加载黑名单类型列表
         await loadBlacklistTypesForPark(wanXiangConfigForm.parkCode);
 
@@ -3477,25 +4625,25 @@ const handleWanXiangConfigDialog = async () => {
 
         if (res.data && res.data.code === '0' && res.data.data) {
             const config = res.data.data;
-            
+
             // ✅ 从 description JSON 中解析所有配置
             if (config.description) {
                 try {
                     const descConfig = JSON.parse(config.description);
                     console.log('📋 解析description配置:', descConfig);
-                    
+
                     // 夜间时间配置
                     wanXiangConfigForm.nightStartTime = config.nightStartTime || descConfig.nightStartTime || "23:00";
                     wanXiangConfigForm.nightEndTime = config.nightEndTime || descConfig.nightEndTime || "06:00";
                     wanXiangConfigForm.nightTimeHours = config.nightTimeHours || descConfig.nightTimeHours || 2;
-                    
+
                     // VIP配置
                     wanXiangConfigForm.vipCheckMode = descConfig.vipCheckMode || "include";
                     wanXiangConfigForm.vipTicketTypes = descConfig.vipTicketTypes || [];
-                    
+
                     // 黑名单配置
                     wanXiangConfigForm.blacklistName = descConfig.blacklistName || (blacklistTypeOptions.value.length > 0 ? blacklistTypeOptions.value[0].value : "");
-                    
+
                     // 拉黑天数
                     if (descConfig.isPermanent === true || descConfig.blacklistDays === "永久" || descConfig.blacklistDays === 9999) {
                         wanXiangConfigForm.isPermanent = true;
@@ -3504,41 +4652,41 @@ const handleWanXiangConfigDialog = async () => {
                         wanXiangConfigForm.isPermanent = descConfig.isPermanent === false ? false : true;
                         wanXiangConfigForm.blacklistDays = descConfig.blacklistDays || 30;
                     }
-                    
+
                     // 推送时间段
                     wanXiangConfigForm.notificationStartTime = descConfig.notificationStartTime || "23:00";
                     wanXiangConfigForm.notificationEndTime = descConfig.notificationEndTime || "06:00";
-                    
+
                     console.log('✅ 加载配置成功:', wanXiangConfigForm);
                 } catch (e) {
                     console.warn('⚠️ 解析description配置失败（可能是旧格式数据）:', e);
                     console.log('📋 旧格式description内容:', config.description);
-                    
+
                     // 🔍 尝试解析旧格式文本：月票车配置: 夜间(23:00-06:00)超过2小时拉黑 | [待检:类型1,类型2] | [拉黑天数:永久] | [黑名单类型:类型名]
                     const oldConfig = parseOldDescriptionFormat(config.description);
-                    
+
                     // 夜间时间配置（优先使用数据库基础字段）
                     wanXiangConfigForm.nightStartTime = config.nightStartTime || oldConfig.nightStartTime || "23:00";
                     wanXiangConfigForm.nightEndTime = config.nightEndTime || oldConfig.nightEndTime || "06:00";
                     wanXiangConfigForm.nightTimeHours = config.nightTimeHours || oldConfig.nightTimeHours || 2;
-                    
+
                     // VIP配置（从旧格式解析）
                     wanXiangConfigForm.vipCheckMode = oldConfig.vipCheckMode || "include";
                     wanXiangConfigForm.vipTicketTypes = oldConfig.vipTicketTypes || [];
-                    
+
                     // 黑名单配置（从旧格式解析）
                     wanXiangConfigForm.blacklistName = oldConfig.blacklistName || (blacklistTypeOptions.value.length > 0 ? blacklistTypeOptions.value[0].value : "");
-                    
+
                     // 拉黑天数
                     wanXiangConfigForm.isPermanent = oldConfig.isPermanent !== undefined ? oldConfig.isPermanent : true;
                     wanXiangConfigForm.blacklistDays = oldConfig.blacklistDays || 30;
-                    
+
                     // 推送时间段
                     wanXiangConfigForm.notificationStartTime = "23:00";
                     wanXiangConfigForm.notificationEndTime = "06:00";
-                    
+
                     console.log('✅ 从旧格式解析的配置:', oldConfig);
-                    
+
                     // 提示用户重新保存配置
                     ElMessage.warning({
                         message: '已从旧配置格式中读取配置，请检查后重新保存以升级为新格式。',
@@ -3664,7 +4812,7 @@ const handleSaveWanXiangConfig = async () => {
             const username = localStorage.getItem("ms_username") || "管理员";
 
             const notificationDesc = `，推送时间段：${wanXiangConfigForm.notificationStartTime}~${wanXiangConfigForm.notificationEndTime}`;
-            
+
             await activityApi.logViolationOperation(
                 userId,
                 username,
@@ -4942,6 +6090,7 @@ const formatHour = (h) => {
                 ul {
                     margin-top: 8px;
                     padding-left: 16px;
+
                     li {
                         margin-bottom: 4px;
                         font-size: 12px;
@@ -5368,6 +6517,574 @@ const formatHour = (h) => {
 .batch-process-dialog {
     .batch-info {
         margin-bottom: 20px;
+    }
+}
+
+// 🆕 违规统计弹窗样式
+.statistics-dialog {
+    :deep(.el-dialog__header) {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px 24px;
+
+        .el-dialog__title {
+            color: white;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .el-dialog__headerbtn {
+            .el-dialog__close {
+                color: white;
+                font-size: 20px;
+
+                &:hover {
+                    color: rgba(255, 255, 255, 0.8);
+                }
+            }
+        }
+    }
+
+    :deep(.el-dialog__body) {
+        padding: 0;
+        background: #f8fafc;
+    }
+}
+
+// 时间选择器样式
+.time-selector {
+    padding: 20px 24px;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+// 统计弹窗内容样式
+.statistics-dialog-content {
+    padding: 24px;
+    min-height: 400px;
+
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+
+    .stat-card {
+        display: flex;
+        align-items: center;
+        padding: 20px;
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 16px;
+        flex-shrink: 0;
+
+        .el-icon {
+            font-size: 24px;
+        }
+
+        &.warning {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #d97706;
+        }
+
+        &.pending {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #2563eb;
+        }
+
+        &.processed {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #059669;
+        }
+
+        &.blacklisted {
+            background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+            color: #dc2626;
+        }
+    }
+
+    .stat-content {
+        flex: 1;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1f2937;
+        line-height: 1.2;
+        margin-bottom: 6px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #6b7280;
+        font-weight: 500;
+    }
+
+    // 单图表布局
+    .single-chart {
+        margin-top: 24px;
+    }
+
+    .chart-box {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f1f5f9;
+        transition: all 0.3s ease;
+        
+        &:hover {
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .chart-header {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f3f4f6;
+            padding-bottom: 12px;
+
+            .header-content {
+                .chart-title {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #1f2937;
+                    margin: 0 0 8px 0;
+
+                    .el-icon {
+                        color: #667eea;
+                    }
+                }
+
+                .chart-subtitle {
+                    font-size: 14px;
+                    color: #6b7280;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+
+                    .total-count {
+                        color: #dc2626;
+                        font-weight: 600;
+                    }
+                }
+            }
+        }
+
+        .chart-content {
+            width: 100%;
+            height: 350px;
+        }
+        
+        // Top值提醒区域样式
+        .top-alerts {
+            margin: 16px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            
+            .alert-item {
+                display: flex;
+                align-items: center;
+                padding: 10px 16px;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                
+                .alert-icon {
+                    margin-right: 8px;
+                    font-size: 16px;
+                }
+                
+                .alert-text {
+                    flex: 1;
+                    line-height: 1.4;
+                    
+                    // 提醒中的车牌样式
+                    :deep(.styled-plate-number) {
+                        display: inline-block;
+                        font-size: 12px;
+                        font-weight: bold;
+                        padding: 3px 6px;
+                        border-radius: 3px;
+                        font-family: "微软雅黑", "Microsoft YaHei", sans-serif;
+                        letter-spacing: 0.3px;
+                        margin: 0 2px;
+                        vertical-align: middle;
+                        
+                        // 传统燃油车牌 - 蓝色渐变
+                        &.traditional {
+                            background: linear-gradient(180deg, #0C4FC5 0%, #216FEF 100%);
+                            color: #FFFFFF;
+                            border: 1px solid #0C4FC5;
+                            box-shadow: 0 1px 2px rgba(12, 79, 197, 0.3);
+                        }
+                        
+                        // 新能源车牌 - 绿色渐变
+                        &.new-energy {
+                            background: linear-gradient(180deg, #6AD390 0%, #D0F1E4 100%);
+                            color: #000000;
+                            border: 1px solid #6AD390;
+                            box-shadow: 0 1px 2px rgba(106, 211, 144, 0.3);
+                        }
+                    }
+                }
+                
+                &.danger {
+                    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+                    color: #dc2626;
+                    border-left: 4px solid #ef4444;
+                    
+                    .alert-icon {
+                        color: #ef4444;
+                    }
+                    
+                    &:hover {
+                        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+                        transform: translateX(2px);
+                    }
+                }
+                
+                &.warning {
+                    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+                    color: #d97706;
+                    border-left: 4px solid #f59e0b;
+                    
+                    .alert-icon {
+                        color: #f59e0b;
+                    }
+                    
+                    &:hover {
+                        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                        transform: translateX(2px);
+                    }
+                }
+                
+                &.success {
+                    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                    color: #059669;
+                    border-left: 4px solid #10b981;
+                    
+                    .alert-icon {
+                        color: #10b981;
+                    }
+                    
+                    &:hover {
+                        background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+                        transform: translateX(2px);
+                    }
+                }
+                
+                &.info {
+                    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                    color: #0284c7;
+                    border-left: 4px solid #0ea5e9;
+                    
+                    .alert-icon {
+                        color: #0ea5e9;
+                    }
+                    
+                    &:hover {
+                        background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+                        transform: translateX(2px);
+                    }
+                }
+            }
+        }
+    }
+
+    // 高频违规车辆Top10样式（保留但不使用）
+    .top-violators-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+
+            .section-title {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 18px;
+                font-weight: 600;
+                color: #1f2937;
+                margin: 0;
+
+                .el-icon {
+                    color: #f59e0b;
+                }
+            }
+
+            .time-filter {
+                :deep(.el-radio-group) {
+                    .el-radio-button {
+                        .el-radio-button__inner {
+                            border-color: #d1d5db;
+                            color: #6b7280;
+                            background: white;
+                            font-size: 12px;
+                            padding: 8px 16px;
+
+                            &:hover {
+                                color: #4f46e5;
+                                border-color: #4f46e5;
+                            }
+                        }
+
+                        &.is-active {
+                            .el-radio-button__inner {
+                                background: #4f46e5;
+                                border-color: #4f46e5;
+                                color: white;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        .top-violators-content {
+            .empty-data {
+                text-align: center;
+                padding: 40px 20px;
+                color: #9ca3af;
+            }
+
+            .violators-list {
+                .violator-item {
+                    display: flex;
+                    align-items: center;
+                    padding: 16px 20px;
+                    background: white;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 12px;
+                    margin-bottom: 12px;
+                    transition: all 0.3s ease;
+                    position: relative;
+                    overflow: hidden;
+
+                    &:hover {
+                        transform: translateX(4px);
+                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                    }
+
+                    &.top-three {
+                        border-left: 4px solid #f59e0b;
+                        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+                    }
+
+                    .rank {
+                        margin-right: 20px;
+
+                        .rank-number {
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 32px;
+                            height: 32px;
+                            border-radius: 50%;
+                            font-weight: 700;
+                            font-size: 14px;
+
+                            &.rank-first {
+                                background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                                color: white;
+                            }
+
+                            &.rank-second {
+                                background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+                                color: white;
+                            }
+
+                            &.rank-third {
+                                background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+                                color: white;
+                            }
+
+                            &.rank-normal {
+                                background: #f3f4f6;
+                                color: #6b7280;
+                            }
+                        }
+                    }
+
+                    .plate-info {
+                        flex: 1;
+                        margin-right: 16px;
+
+                        .plate-number {
+                            font-size: 16px;
+                            font-weight: 700;
+                            margin-bottom: 6px;
+                            padding: 6px 12px;
+                            border-radius: 6px;
+                            display: inline-block;
+                            font-family: 'Courier New', monospace;
+
+                            &.normal-plate {
+                                background: #1e40af;
+                                color: white;
+                                border: 1px solid #1e40af;
+                            }
+
+                            &.new-energy-plate {
+                                background: #059669;
+                                color: white;
+                                border: 1px solid #059669;
+                            }
+                        }
+
+                        .violation-types {
+                            display: flex;
+                            align-items: center;
+                            gap: 4px;
+                            flex-wrap: wrap;
+
+                            .more-types {
+                                font-size: 12px;
+                                color: #6b7280;
+                                font-style: italic;
+                            }
+                        }
+                    }
+
+                    .violation-count {
+                        text-align: center;
+                        margin-right: 20px;
+
+                        .count-number {
+                            font-size: 24px;
+                            font-weight: 700;
+                            color: #dc2626;
+                            line-height: 1;
+                        }
+
+                        .count-label {
+                            font-size: 12px;
+                            color: #6b7280;
+                            margin-top: 2px;
+                        }
+                    }
+
+                    .progress-bar {
+                        width: 80px;
+                        height: 8px;
+                        background: #f3f4f6;
+                        border-radius: 4px;
+                        overflow: hidden;
+                        position: relative;
+
+                        .progress-fill {
+                            height: 100%;
+                            background: linear-gradient(90deg, #f59e0b 0%, #dc2626 100%);
+                            border-radius: 4px;
+                            transition: width 0.8s ease;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+    .statistics-dialog-content {
+        padding: 16px;
+
+        .stats-cards {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+
+            .stat-card {
+                padding: 16px;
+
+                .stat-icon {
+                    width: 40px;
+                    height: 40px;
+                    margin-right: 12px;
+
+                    .el-icon {
+                        font-size: 20px;
+                    }
+                }
+
+                .stat-content {
+                    .stat-value {
+                        font-size: 22px;
+                    }
+
+                    .stat-label {
+                        font-size: 12px;
+                    }
+                }
+            }
+        }
+
+        .top-violators-section {
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+
+                .section-title {
+                    font-size: 16px;
+                }
+            }
+
+            .violators-list {
+                .violator-item {
+                    padding: 12px 16px;
+
+                    .plate-info {
+                        .plate-number {
+                            font-size: 14px;
+                            padding: 4px 8px;
+                        }
+                    }
+
+                    .violation-count {
+                        .count-number {
+                            font-size: 20px;
+                        }
+                    }
+
+                    .progress-bar {
+                        width: 60px;
+                    }
+                }
+            }
+        }
     }
 }
 </style>

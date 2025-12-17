@@ -169,8 +169,8 @@ export default {
         description: '小程序二维码'
       },
       fileList: [],
-      // uploadUrl: 'http://www.xuerparking.cn:8543/parking/wechat/media/upload',
-      uploadUrl: 'https://www.xuerparking.cn/parking/wechat/media/upload',
+      // uploadUrl: 'https://www.xuerparking.cn:8543/parking/wechat/media/upload',
+      uploadUrl: 'https://www.xuerparking.cn:8543/parking/wechat/media/upload',
       mediaList: [],
       loading: false
     }

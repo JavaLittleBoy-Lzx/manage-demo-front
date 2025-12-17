@@ -233,7 +233,7 @@ const handleEdit = (row) => {
 //导出报表的按钮，http请求
 const handleExport = () => {
   window.location.href =
-    "http://www.xuerparking.cn:9999/purchase/queryexportPurchaseManagement?deviceName=" +
+    "http://localhost:9999/purchase/queryexportPurchaseManagement?deviceName=" +
     query.deviceName +
     "&deviceCode=" +
     query.deviceCode +

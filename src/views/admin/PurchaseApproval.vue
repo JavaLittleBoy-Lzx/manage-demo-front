@@ -178,7 +178,7 @@ const query = reactive({
 const handleExport = () => {
   query.audiusUserId = localStorage.getItem("userId")
   window.location.href =
-    "http://www.xuerparking.cn:9999/purchase/queryexportPurchaseManagement?departmentId=" +
+    "http://localhost:9999/purchase/queryexportPurchaseManagement?departmentId=" +
     query.departmentId +
     " &deviceName=" +
     query.deviceName +

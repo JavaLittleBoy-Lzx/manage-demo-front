@@ -344,7 +344,7 @@ import * as echarts from 'echarts';
 // 开发环境下导入测试工具
 import { testDashboardApis, generateTestReport } from '../../utils/dashboard-test';
 // 导入车场权限管理工具
-import { filterDataByParkAuth, getParkAuthTip, isAdmin as checkIsAdmin } from '../../utils/parkAuth';
+import { filterDataByParkAuth, getParkAuthTip, isAdmin as checkIsAdmin, getManagedParks } from '../../utils/parkAuth';
 
 export default {
   name: "EmptyPer",
@@ -1962,20 +1962,80 @@ export default {
     // 1. 加载高频违规车辆Top10（参考重复放行车辆Top20样式）
     const loadTopViolators = async () => {
       try {
-        console.log('开始获取高频违规车辆Top10...');
-        const response = await dashboardApi.getTopViolators(30, 10);
+        console.log('🚗 [高频违规车辆] 开始获取Top10...');
+        
+        // 🔒 获取用户管理的车场，在API调用时就传递车场参数
+        const managedParks = getManagedParks();
+        const isAdminUser = checkIsAdmin();
+        
+        console.log('🔒 [高频违规车辆] 车场参数检查:', {
+          isAdmin: isAdminUser,
+          managedParks: managedParks,
+          parksCount: managedParks.length
+        });
+        
+        const parkName = (!isAdminUser && managedParks.length > 0) ? managedParks[0] : null;
+        
+        console.log('🔒 [高频违规车辆] 最终传递的车场参数:', parkName);
+        
+        const response = await dashboardApi.getTopViolators(30, 10, parkName);
         
         let rawData = response?.data?.data || [];
-        console.log('高频违规车辆原始数据:', rawData);
+        console.log('🚗 [高频违规车辆] API响应数据:', {
+          总条数: rawData.length,
+          样例数据: rawData.slice(0, 2)
+        });
         
         // 🔒 根据用户权限过滤车场数据
         if (rawData.length > 0 && rawData[0].parkName) {
+          const beforeFilter = rawData.length;
+          const parkNames = [...new Set(rawData.map(item => item.parkName))];
+          console.log('🚗 [高频违规车辆] 过滤前车场列表:', parkNames);
+          
           rawData = filterDataByParkAuth(rawData, 'parkName');
-          console.log(`🔒 违规数据权限过滤后 - 数据条数: ${rawData.length}`);
-        }
+          
+          console.log('🚗 [高频违规车辆] 权限过滤结果:', {
+          过滤前: beforeFilter,
+          过滤后: rawData.length,
+          被过滤掉: beforeFilter - rawData.length
+        });
         
-        // 聚合数据：由于后端现在按 plateNumber + parkName 分组，前端需要按 plateNumber 汇总
-        const plateMap = new Map();
+        if (rawData.length === 0) {
+          console.warn('⚠️ [高频违规车辆] 所有数据被权限过滤，可能是用户管理的车场与数据中的parkName不匹配');
+        }
+      }
+      
+      // 🐛 修复：如果过滤后没有数据，显示空状态
+      if (rawData.length === 0) {
+        const emptyOption = {
+          title: {
+            text: '暂无数据',
+            left: 'center',
+            top: 'center',
+            textStyle: {
+              fontSize: 16,
+              color: '#999',
+              fontWeight: 'normal'
+            }
+          },
+          graphic: {
+            type: 'text',
+            left: 'center',
+            top: '55%',
+            style: {
+              text: '您管理的车场暂无违规记录',
+              fontSize: 13,
+              fill: '#ccc'
+            }
+          }
+        };
+        await nextTick();
+        initChart('topViolators', emptyOption);
+        return;
+      }
+      
+      // 聚合数据：由于后端现在按 plateNumber + parkName 分组，前端需要按 plateNumber 汇总
+      const plateMap = new Map();
         rawData.forEach(item => {
           const plateNumber = item.plateNumber;
           if (!plateMap.has(plateNumber)) {
@@ -2012,6 +2072,8 @@ export default {
           .sort((a, b) => b.violationCount - a.violationCount)
           .slice(0, 10);
         
+        console.log('🚗 [高频违规车辆] 聚合后的Top10数据:', aggregatedData);
+        
         // 使用formatPlateNumber处理车牌号，添加车牌类型信息
         const data = aggregatedData.map(item => ({
           ...formatPlateNumber(item.plateNumber),
@@ -2019,6 +2081,11 @@ export default {
           violationTypes: item.violationTypes,
           lastViolationTime: item.lastViolationTime
         }));
+        
+        console.log('🚗 [高频违规车辆] 最终图表数据:', {
+          数据条数: data.length,
+          车牌列表: data.map(item => item.plateNumber)
+        });
         
         const option = {
           title: { 

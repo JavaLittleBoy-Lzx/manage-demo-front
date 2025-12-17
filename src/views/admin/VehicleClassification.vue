@@ -113,7 +113,7 @@ const form = reactive({
 });
 
 const handleExport = () => {
-    window.location.href = "http://www.xuerparking.cn:9999/purchase/exportPurchaseManagement";
+    window.location.href = "http://localhost:9999/purchase/exportPurchaseManagement";
 };
 // 重置
 const onReset = () => {
