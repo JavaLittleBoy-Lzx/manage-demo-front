@@ -127,10 +127,10 @@ const queryOwnerInfo = async () => {
 
 ```bash
 # 查询白名单列表
-curl -X GET "http://www.xuerparking.cn:8543/parking/whitelist?page=1&size=10"
+curl -X GET "https://www.xuerparking.cn:8543/parking/whitelist?page=1&size=10"
 
 # 添加白名单
-curl -X POST "http://www.xuerparking.cn:8543/parking/whitelist" \
+curl -X POST "https://www.xuerparking.cn:8543/parking/whitelist" \
   -H "Content-Type: application/json" \
   -d '{
     "plateNumber": "京A12345",
@@ -142,7 +142,7 @@ curl -X POST "http://www.xuerparking.cn:8543/parking/whitelist" \
   }'
 
 # 检查是否在白名单
-curl -X GET "http://www.xuerparking.cn:8543/parking/whitelist/check?plateNumber=京A12345&parkName=东北林业大学"
+curl -X GET "https://www.xuerparking.cn:8543/parking/whitelist/check?plateNumber=京A12345&parkName=东北林业大学"
 ```
 
 ## 🎯 与违规管理的集成建议

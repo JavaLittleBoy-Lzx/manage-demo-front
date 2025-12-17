@@ -18,7 +18,7 @@ module.exports = {
   devServer:{
     // proxy: {
     //   '/api' : {
-    //     target: 'http://www.xuerparking.cn:8080',
+    //     target: 'http://localhost:8080',
     //     changeOrigin: true,
     //     pathRewrite: {
     //       '^/api':''

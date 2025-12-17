@@ -515,10 +515,10 @@ npm run dev
 ### 2. 访问各个配置页面
 
 在浏览器中访问：
-- 违规位置配置：http://www.xuerparking.cn:8080/admin/violation-config/location
-- 违规类型配置：http://www.xuerparking.cn:8080/admin/violation-config/type
-- 违规描述配置：http://www.xuerparking.cn:8080/admin/violation-config/description
-- 拉黑原因配置：http://www.xuerparking.cn:8080/admin/violation-config/reason
+- 违规位置配置：http://localhost:8080/admin/violation-config/location
+- 违规类型配置：http://localhost:8080/admin/violation-config/type
+- 违规描述配置：http://localhost:8080/admin/violation-config/description
+- 拉黑原因配置：http://localhost:8080/admin/violation-config/reason
 
 ### 3. 验证功能
 

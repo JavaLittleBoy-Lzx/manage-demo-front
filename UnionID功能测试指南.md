@@ -103,12 +103,12 @@ cd car-new-demo
 ### 测试接口
 ```bash
 # 测试获取UnionID
-curl -X POST http://www.xuerparking.cn:8080/parking/wechat/getUnionInfo \
+curl -X POST http://localhost:8080/parking/wechat/getUnionInfo \
   -H "Content-Type: application/json" \
   -d '{"code":"test_code"}'
 
 # 测试检查关注状态
-curl -X GET "http://www.xuerparking.cn:8080/parking/wechat/checkSubscriptionByUnionid?unionid=test_unionid_001"
+curl -X GET "http://localhost:8080/parking/wechat/checkSubscriptionByUnionid?unionid=test_unionid_001"
 ```
 
 ## 🔧 调试技巧

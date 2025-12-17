@@ -8,7 +8,7 @@
 
 ```bash
 # 检查后端是否启动
-curl http://www.xuerparking.cn:8543/api/ai/status
+curl https://www.xuerparking.cn:8543/api/ai/status
 ```
 
 预期返回：
@@ -30,7 +30,7 @@ cd d:\PakingDemo\manage-front
 npm run serve
 ```
 
-访问：http://www.xuerparking.cn:8080
+访问：http://localhost:8080
 
 ---
 
@@ -43,7 +43,7 @@ npm run serve
 #### 操作步骤：
 
 1. **登录系统**
-   - 访问 http://www.xuerparking.cn:8080
+   - 访问 http://localhost:8080
    - 使用管理员账号登录
 
 2. **进入违规管理页面**
@@ -234,7 +234,7 @@ testAIStatus()
 4. **检查后端服务**
    ```bash
    # 测试后端接口
-   curl -X POST http://www.xuerparking.cn:8543/api/ai/violation-description \
+   curl -X POST https://www.xuerparking.cn:8543/api/ai/violation-description \
      -H "Content-Type: application/json" \
      -d '{"licensePlate":"京A12345","violationType":"占用消防通道"}'
    ```
@@ -332,8 +332,8 @@ testAIStatus()
 **测试日期**: 2024-11-17
 **测试人员**: [你的名字]
 **测试环境**: 
-- 前端: http://www.xuerparking.cn:8080
-- 后端: http://www.xuerparking.cn:8543
+- 前端: http://localhost:8080
+- 后端: https://www.xuerparking.cn:8543
 
 ## 测试结果
 

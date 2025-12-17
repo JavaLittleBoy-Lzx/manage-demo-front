@@ -51,7 +51,7 @@ mvn spring-boot:run
 **验证API是否正常：**
 ```bash
 # 测试获取违规位置列表
-curl http://www.xuerparking.cn:8080/violation-config/locations/enabled?parkName=东北林业大学
+curl http://localhost:8080/violation-config/locations/enabled?parkName=东北林业大学
 ```
 
 ### 第3步：启动前端管理后台（1分钟）
@@ -66,7 +66,7 @@ npm install
 npm run dev
 ```
 
-访问：http://www.xuerparking.cn:8081（或控制台显示的端口）
+访问：http://localhost:8081（或控制台显示的端口）
 
 ### 第4步：配置违规选项（1分钟）
 
@@ -88,7 +88,7 @@ npm run dev
 **API测试：**
 ```bash
 # 1. 新增违规位置
-curl -X POST http://www.xuerparking.cn:8080/violation-config/locations \
+curl -X POST http://localhost:8080/violation-config/locations \
   -H "Content-Type: application/json" \
   -d '{
     "locationName": "测试位置1",
@@ -99,10 +99,10 @@ curl -X POST http://www.xuerparking.cn:8080/violation-config/locations \
   }'
 
 # 2. 查询启用的位置列表
-curl http://www.xuerparking.cn:8080/violation-config/locations/enabled?parkName=东北林业大学
+curl http://localhost:8080/violation-config/locations/enabled?parkName=东北林业大学
 
 # 3. 分页查询所有位置
-curl "http://www.xuerparking.cn:8080/violation-config/locations?page=1&size=10"
+curl "http://localhost:8080/violation-config/locations?page=1&size=10"
 ```
 
 **前端测试：**
@@ -204,12 +204,12 @@ SELECT * FROM violation_types WHERE is_enabled = 1;
     {
       "name": "Get Locations",
       "method": "GET",
-      "url": "http://www.xuerparking.cn:8080/violation-config/locations/enabled?parkName=东北林业大学"
+      "url": "http://localhost:8080/violation-config/locations/enabled?parkName=东北林业大学"
     },
     {
       "name": "Add Location",
       "method": "POST",
-      "url": "http://www.xuerparking.cn:8080/violation-config/locations",
+      "url": "http://localhost:8080/violation-config/locations",
       "body": {
         "mode": "raw",
         "raw": "{\"locationName\":\"测试位置\",\"parkName\":\"东北林业大学\",\"isEnabled\":true}"

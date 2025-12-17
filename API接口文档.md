@@ -727,7 +727,7 @@ devServer: {
   port: 9999,
   proxy: {
     '/api': {
-      target: 'http://www.xuerparking.cn:8543',
+      target: 'https://www.xuerparking.cn:8543',
       changeOrigin: true
     }
   }

@@ -59,7 +59,7 @@
 ## 🛠️ 使用方法
 
 ### 测试功能
-访问测试页面：`http://www.xuerparking.cn:9999/#/admin/BigModelTest`
+访问测试页面：`http://localhost:9999/#/admin/BigModelTest`
 
 在这个页面您可以：
 - 检查API配置状态

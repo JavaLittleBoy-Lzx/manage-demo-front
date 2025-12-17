@@ -56,7 +56,7 @@ cp .env.example .env.local
 
 ```env
 # API基础地址（后端服务地址）
-VUE_APP_API_BASE_URL=http://www.xuerparking.cn:8543
+VUE_APP_API_BASE_URL=https://www.xuerparking.cn:8543
 
 # BigModel AI配置（前端不需要填写API Key）
 # API Key在后端配置，前端只需要配置功能开关
@@ -594,7 +594,7 @@ const handleAIContentAccepted = (content) => {
 1. **检查后端服务**
    ```bash
    # 测试后端AI接口
-   curl http://www.xuerparking.cn:8543/api/ai/status
+   curl https://www.xuerparking.cn:8543/api/ai/status
    ```
 
 2. **查看后端配置**
@@ -712,7 +712,7 @@ const handleAIContentAccepted = (content) => {
      devServer: {
        proxy: {
          '/api': {
-           target: 'http://www.xuerparking.cn:8543',
+           target: 'https://www.xuerparking.cn:8543',
            changeOrigin: true
          }
        }

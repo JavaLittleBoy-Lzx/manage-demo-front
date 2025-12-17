@@ -79,7 +79,7 @@ cp .env.example .env.local
 
 ```env
 # 后端服务地址
-VUE_APP_API_BASE_URL=http://www.xuerparking.cn:8543
+VUE_APP_API_BASE_URL=https://www.xuerparking.cn:8543
 
 # AI 功能开关
 VUE_APP_ENABLE_AI_CUSTOMER_SERVICE=true
@@ -101,7 +101,7 @@ npm run serve
 
 ### 步骤 4: 测试 AI 功能
 
-访问 http://www.xuerparking.cn:8080
+访问 http://localhost:8080
 
 1. 进入"违规管理"页面
 2. 点击"新增违规记录"
@@ -224,8 +224,8 @@ features: {
 
 ### 功能测试清单
 
-- [ ] 后端 AI 接口可访问 (`http://www.xuerparking.cn:8543/api/ai/status`)
-- [ ] 前端服务正常运行 (`http://www.xuerparking.cn:8080`)
+- [ ] 后端 AI 接口可访问 (`https://www.xuerparking.cn:8543/api/ai/status`)
+- [ ] 前端服务正常运行 (`http://localhost:8080`)
 - [ ] 违规描述 AI 生成功能正常
 - [ ] 智能客服对话功能正常
 - [ ] 数据报告生成功能正常
@@ -235,10 +235,10 @@ features: {
 
 ```bash
 # 测试后端 AI 接口
-curl http://www.xuerparking.cn:8543/api/ai/status
+curl https://www.xuerparking.cn:8543/api/ai/status
 
 # 测试违规描述生成
-curl -X POST http://www.xuerparking.cn:8543/api/ai/violation-description \
+curl -X POST https://www.xuerparking.cn:8543/api/ai/violation-description \
   -H "Content-Type: application/json" \
   -d '{"licensePlate":"京A12345","violationType":"占用消防通道"}'
 ```

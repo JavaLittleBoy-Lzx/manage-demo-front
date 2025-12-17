@@ -101,7 +101,7 @@
 ### 前端使用
 
 #### 1. 测试AI功能
-访问测试页面：`http://www.xuerparking.cn:9999/#/admin/BigModelTest`
+访问测试页面：`http://localhost:9999/#/admin/BigModelTest`
 
 #### 2. 集成到现有组件
 ```vue

@@ -413,10 +413,10 @@ npm run build  # 生产构建
 ### 后端API测试
 ```bash
 # 测试违规位置列表
-curl http://www.xuerparking.cn:8080/violation-config/locations/enabled?parkName=东北林业大学
+curl http://localhost:8080/violation-config/locations/enabled?parkName=东北林业大学
 
 # 测试新增违规位置
-curl -X POST http://www.xuerparking.cn:8080/violation-config/locations \
+curl -X POST http://localhost:8080/violation-config/locations \
   -H "Content-Type: application/json" \
   -d '{"locationName":"测试位置","parkName":"东北林业大学","isEnabled":true}'
 ```
