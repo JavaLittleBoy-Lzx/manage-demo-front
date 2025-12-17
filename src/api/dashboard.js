@@ -175,15 +175,20 @@ export const dashboardApi = {
   // ==================== 📊 新增统计图表API ====================
 
   /**
-   * 1. 高频违规车辆Top10统计
+   * 1. 高频违规车辆Top N
    * @param {Number} days - 统计天数，默认30天
    * @param {Number} limit - 返回数量，默认10
+   * @param {String} parkName - 车场名称（可选）
    */
-  getTopViolators(days = 30, limit = 10) {
+  getTopViolators(days = 30, limit = 10, parkName = null) {
+    const params = { days, limit };
+    if (parkName) {
+      params.parkName = parkName;
+    }
     return request({
       url: '/parking/violations/stats/top-violators',
       method: 'GET',
-      params: { days, limit }
+      params
     });
   },
 

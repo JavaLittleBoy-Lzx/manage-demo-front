@@ -50,7 +50,7 @@ class SessionTimeoutManager {
     }
     
     // 默认所有角色都启用会话超时
-    console.log(`✅ [会话超时] 角色 "${roleName}" 启用会话超时`);
+    // console.log(`✅ [会话超时] 角色 "${roleName}" 启用会话超时`);
     return true;
   }
 

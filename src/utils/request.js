@@ -6,8 +6,8 @@ const service = axios.create({
     // easy-mock服务挂了，暂时不使用了
     // baseURL: 'https://www.xuerparking.cn:8543',
     // baseURL: 'https://472154x56q.vicp.fun',
-    baseURL: 'http://localhost:8543',
-    // baseURL: 'http://www.xuerparking.cn:8080',
+    baseURL: 'https://www.xuerparking.cn:8543',
+    // baseURL: 'http://localhost:8080',
     // baseURL: 'https://csharphrb.picp.vip',
     timeout: 5000000
 });

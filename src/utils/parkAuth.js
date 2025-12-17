@@ -42,24 +42,29 @@ export function isAdmin() {
   const roleId = localStorage.getItem('ms_role');
   const roleName = (localStorage.getItem('ms_role_name') || '').trim();
   
-  // 调试信息
+  // roleId = 1 表示管理员
+  if (roleId == 1) {
+    console.log('🔍 检查管理员权限:', {
+      roleId,
+      roleName,
+      isAdmin: true,
+      reason: 'roleId = 1'
+    });
+    return true;
+  }
+  
+  // 只有角色名称完全等于"管理员"才算管理员
+  // 排除"巡检管理员"、"物业管理员"等特殊管理员角色
+  const isSystemAdmin = roleName === '管理员';
+  
   console.log('🔍 检查管理员权限:', {
     roleId,
     roleName,
-    isAdmin: roleId == 1 || roleName === '管理员' || roleName.includes('管理员')
+    isAdmin: isSystemAdmin,
+    reason: isSystemAdmin ? '角色名称为"管理员"' : '非系统管理员，需要车场权限过滤'
   });
   
-  // roleId = 1 表示管理员
-  if (roleId == 1) {
-    return true;
-  }
-  
-  // 角色名称包含"管理员"就认为是管理员（更宽松的匹配）
-  if (roleName.includes('管理员')) {
-    return true;
-  }
-  
-  return false;
+  return isSystemAdmin;
 }
 
 /**
